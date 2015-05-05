@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Pulse Radar</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="button_start_record">Start Recording</string>
+    <string name="button_stop_record">Stop Recording</string>
+    <string name="button_play_signal">Play Signal</string>
+    <string name="input_filename_record">Filename</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="info">Info:\nFiles are saved in the app-own directory (usually ...\\Android\\data\\jakobkarolus.de.pulseradar\\)\n\nMake sure the app stays in focus for longer records. Otherwise the record gets stopped!</string>
+</resources>
