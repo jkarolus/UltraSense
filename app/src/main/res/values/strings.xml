@@ -8,5 +8,5 @@
     <string name="input_filename_record">Filename</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
-    <string name="info">Info:\nFiles are saved in the app-own directory (usually ...\\Android\\data\\jakobkarolus.de.pulseradar\\)\n\nMake sure the app stays in focus for longer records. Otherwise the record gets stopped!</string>
+    <string name="info">Info:\nFiles are saved in the app-own directory (usually ...\\Android\\data\\jakobkarolus.de.pulseradar\\)</string>
 </resources>
