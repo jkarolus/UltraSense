@@ -17,6 +17,7 @@
     <Button
         android:layout_below="@id/button_start_record"
         android:id="@+id/button_stop_record"
+        android:enabled="false"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:onClick="stopRecord"

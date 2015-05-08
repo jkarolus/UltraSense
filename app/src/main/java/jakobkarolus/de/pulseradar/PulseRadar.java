@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.FragmentTransaction;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -20,6 +21,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 
 import java.io.DataInputStream;
@@ -45,6 +47,9 @@ public class PulseRadar extends ActionBarActivity {
 
     private boolean recordRunning = false;
     private double currentFreq;
+
+    private Button startButton;
+    private Button stopButton;
 
     private static final int minSize = AudioTrack.getMinBufferSize(SAMPLE_RATE,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
@@ -77,6 +82,12 @@ public class PulseRadar extends ActionBarActivity {
      * @throws FileNotFoundException
      */
     public void startRecord(View view) throws FileNotFoundException {
+
+        startButton.setEnabled(false);
+        startButton.setText("Recording...");
+        startButton.setBackgroundColor(Color.RED);
+        stopButton.setEnabled(true);
+
 
         tempFile = new File(PulseRadar.this.getExternalCacheDir().getAbsolutePath() + "/temp.raw");
 
@@ -134,6 +145,11 @@ public class PulseRadar extends ActionBarActivity {
      * @throws IOException
      */
     public void stopRecord(View view) throws IOException {
+
+        startButton.setEnabled(true);
+        startButton.setText(R.string.button_start_record);
+        startButton.setBackgroundResource(android.R.drawable.btn_default);
+        stopButton.setEnabled(false);
 
         recordRunning = false;
         ar.stop();
@@ -244,6 +260,9 @@ public class PulseRadar extends ActionBarActivity {
 
         currentFreq = 19000.0;
 
+        final Button signalButton = (Button) view;
+        signalButton.setText("Playing Signal...");
+
         CountDownTimer timer = new CountDownTimer(500, 500) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -253,6 +272,7 @@ public class PulseRadar extends ActionBarActivity {
             @Override
             public void onFinish() {
                 currentFreq = STD_FREQ;
+                signalButton.setText(R.string.button_play_signal);
             }
         };
         timer.start();
@@ -305,7 +325,7 @@ public class PulseRadar extends ActionBarActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_pulse_radar, menu);
+        //getMenuInflater().inflate(R.menu.menu_pulse_radar, menu);
         return true;
     }
 
@@ -327,7 +347,8 @@ public class PulseRadar extends ActionBarActivity {
     /**
      * A placeholder fragment containing a simple view.
      */
-    public static class PlaceholderFragment extends Fragment {
+    @SuppressLint("ValidFragment")
+    public class PlaceholderFragment extends Fragment {
 
         public PlaceholderFragment() {
         }
@@ -336,6 +357,8 @@ public class PulseRadar extends ActionBarActivity {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
+            startButton = (Button) rootView.findViewById(R.id.button_start_record);
+            stopButton = (Button) rootView.findViewById(R.id.button_stop_record);
             return rootView;
         }
     }
