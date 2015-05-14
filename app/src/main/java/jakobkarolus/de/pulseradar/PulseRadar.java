@@ -45,6 +45,10 @@ import jakobkarolus.de.pulseradar.view.TouchImageView;
 
 public class PulseRadar extends ActionBarActivity {
 
+    private static int WINDOW_LENGTH = 4096;
+    private static int HOP_SIZE = 1024;
+    private static int NFFT = 4096;
+
     private static final int SAMPLE_RATE = 44100;
     private static final double STD_FREQ = 20000;
     private DataOutputStream dos;
@@ -225,7 +229,7 @@ public class PulseRadar extends ActionBarActivity {
 
         @Override
         protected double[][] doInBackground(double[]... params) {
-            STFT stftAlgo = new STFT(4096, 4096, 1024, AlgoHelper.getHannWindow(4096));
+            STFT stftAlgo = new STFT(WINDOW_LENGTH, NFFT, HOP_SIZE, AlgoHelper.getHannWindow(WINDOW_LENGTH));
             return stftAlgo.computeSTFT(generateLatestData());
         }
     }
