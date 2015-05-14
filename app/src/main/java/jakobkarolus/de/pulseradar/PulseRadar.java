@@ -4,7 +4,9 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.media.AudioFormat;
@@ -12,9 +14,9 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -33,6 +36,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
+import jakobkarolus.de.pulseradar.algorithm.STFT;
+import jakobkarolus.de.pulseradar.view.SpectrogramView;
+import jakobkarolus.de.pulseradar.view.TouchImageView;
 
 
 public class PulseRadar extends ActionBarActivity {
@@ -50,6 +58,10 @@ public class PulseRadar extends ActionBarActivity {
 
     private Button startButton;
     private Button stopButton;
+    private Button testButton;
+    private View rootView;
+
+    private double[][] currentSTFT;
 
     private static final int minSize = AudioTrack.getMinBufferSize(SAMPLE_RATE,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
@@ -58,7 +70,7 @@ public class PulseRadar extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pulse_radar);
         if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
+            getFragmentManager().beginTransaction()
                     .add(R.id.container, new PlaceholderFragment())
                     .commit();
         }
@@ -150,6 +162,7 @@ public class PulseRadar extends ActionBarActivity {
         startButton.setText(R.string.button_start_record);
         startButton.setBackgroundResource(android.R.drawable.btn_default);
         stopButton.setEnabled(false);
+        testButton.setEnabled(true);
 
         recordRunning = false;
         ar.stop();
@@ -159,6 +172,170 @@ public class PulseRadar extends ActionBarActivity {
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         AskForFileNameDialog fileNameDialog = new AskForFileNameDialog();
         fileNameDialog.show(ft, "FileNameDialog");
+    }
+
+    public void testButton(View view) {
+        new ComputeSTFTTask().execute(generateTestData());
+
+    }
+
+    private class ComputeSTFTTask extends AsyncTask<double[], Void, double[][]>{
+
+        private ProgressDialog pd;
+
+        @Override
+        protected void onPreExecute() {
+            pd = ProgressDialog.show(PulseRadar.this, "Computing STFT", "Please wait", true, false);
+        }
+
+        @Override
+        protected void onPostExecute(double[][] stft) {
+            pd.dismiss();
+            /*
+            try {
+                FileWriter fw = new FileWriter(new File(PulseRadar.this.getExternalCacheDir().getAbsolutePath() + "/output.txt"), false);
+                for (int i = 0; i < stft.length; i++) {
+                    for (int j = 0; j < stft[i].length; j++)
+                        if (j == stft[i].length - 1)
+                            fw.write(stft[i][j] + ";\n");
+                        else
+                            fw.write(stft[i][j] + ",");
+                }
+                fw.flush();
+                fw.close();
+            }catch(IOException e){
+
+            }
+            */
+            /*
+            SpectrogramView specView = new SpectrogramView(PulseRadar.this, convertToGreyscale(stft));
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT);
+            params.addRule(RelativeLayout.BELOW, R.id.info_text);
+            ((RelativeLayout) rootView).addView(specView, params);
+            */
+            currentSTFT = stft;
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            ft.replace(R.id.container, new Spectrogram(), Spectrogram.class.getName());
+            ft.addToBackStack(Spectrogram.class.getName());
+            ft.commit();
+
+        }
+
+        @Override
+        protected double[][] doInBackground(double[]... params) {
+            STFT stftAlgo = new STFT(4096, 4096, 1024, AlgoHelper.getHannWindow(4096));
+            return stftAlgo.computeSTFT(generateLatestData());
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (getFragmentManager().getBackStackEntryCount() > 0) {
+            getFragmentManager().popBackStack();
+        } else {
+            this.finish();
+        }
+    }
+
+    @SuppressLint("ValidFragment")
+    public class Spectrogram extends Fragment {
+
+        public Spectrogram(){
+
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+            rootView = inflater.inflate(R.layout.fragment_spectrogram, container, false);
+            TouchImageView spec = (TouchImageView) rootView.findViewById(R.id.spectrogram);
+            SpectrogramView view =new SpectrogramView(getApplicationContext(), convertToGreyscale(currentSTFT));
+            spec.setImageBitmap(view.getBitmap());
+            return rootView;
+        }
+    }
+
+    private double[] generateLatestData() {
+
+        int dataLength = (int) tempFile.length();
+        byte[] rawData = new byte[dataLength];
+
+        DataInputStream input = null;
+        try {
+            input = new DataInputStream(new FileInputStream(tempFile));
+            input.read(rawData);
+            input.close();
+        } catch (IOException e){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(PulseRadar.this, "Cannot access latest recording!", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        double[] data = convertToDoubles(converToShorts(rawData));
+        return data;
+    }
+
+    private short[] converToShorts(byte[] rawData) {
+        short[] shorts = new short[rawData.length /2];
+        ByteBuffer bb = ByteBuffer.wrap(rawData);
+        for(int i=0; i < shorts.length; i++){
+            shorts[i] = bb.getShort();
+        }
+        return shorts;
+    }
+
+    private double[] convertToDoubles(short[] shorts) {
+        double[] data = new double[shorts.length];
+        for(int i=0; i < shorts.length; i++){
+            data[i] = shorts[i];
+        }
+        return data;
+    }
+
+    private int[][] convertToGreyscale(double[][] stft) {
+        double maxValue = findMax(stft);
+        int[][] spec = new int[stft.length][stft[0].length];
+        for (int i = 0; i < stft.length; i++) {
+            for (int j = 0; j < stft[i].length; j++) {
+                int value = 255 - (int) ((stft[i][j]/maxValue)*255.0);
+                spec[i][j] = Color.rgb(value, value, value);
+            }
+        }
+        return spec;
+    }
+
+    private double findMax(double[][] stft) {
+        double currentMax = Double.MIN_VALUE;
+        for(int i=0; i < stft.length; i++){
+            for(int j=0; j < stft[i].length; j++){
+                if(stft[i][j] > currentMax)
+                    currentMax = stft[i][j];
+            }
+        }
+        return currentMax;
+    }
+
+    private double[] generateTestData() {
+        double sampleRate = 44100.0;
+        double amplitude = 1.0;
+        double frequency = 5000.0;
+
+        double seconds = 1.0;
+        double[] buffer = new double[(int) (5*seconds * sampleRate)];
+
+
+        for(int i=0; i < 5; i++)
+        {
+            for (int sample = (int)(i*seconds*sampleRate); sample < (int)((i+1)*seconds*sampleRate); sample++) {
+                double time = sample / sampleRate;
+                buffer[sample] = (amplitude * Math.sin(i*frequency*2.0*Math.PI * time));
+            }
+        }
+        return buffer;
     }
 
 
@@ -356,9 +533,10 @@ public class PulseRadar extends ActionBarActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
+            rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
             startButton = (Button) rootView.findViewById(R.id.button_start_record);
             stopButton = (Button) rootView.findViewById(R.id.button_stop_record);
+            testButton = (Button) rootView.findViewById(R.id.button_fft);
             return rootView;
         }
     }

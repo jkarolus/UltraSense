@@ -39,5 +39,14 @@
         android:layout_marginTop="10dp"
         android:text="@string/info"/>
 
+    <Button
+        android:layout_below="@id/info_text"
+        android:id="@+id/button_fft"
+        android:text="Compute STFT of last record"
+        android:enabled="false"
+        android:onClick="testButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
 
 </RelativeLayout>
