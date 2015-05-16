@@ -21,11 +21,14 @@ public class SpectrogramView extends View{
 
         if (data != null) {
             paint.setStrokeWidth(1);
+
+            //ignore bottom half of frequencies
             int height = data[0].length;
             int width = data.length;
             Toast.makeText(getContext(), "#frequencies: " + height + ", #timesteps: " + width, Toast.LENGTH_LONG).show();
 
-            int[] arrayCol = new int[width*height];
+
+            int[] arrayCol = new int[width*height*9];
             int counter = 0;
             for(int i = height-1; i >= 0; i--) {
                 for(int j = 0; j < width; j++) {
@@ -35,9 +38,20 @@ public class SpectrogramView extends View{
                         value = 255 - (int)(data[j][i] * 255);
                         color = (value<<16|value<<8|value|255<<24);
                         */
+
                     arrayCol[counter] = data[j][i];
+                    arrayCol[counter+1] = data[j][i];
+                    arrayCol[counter+2] = data[j][i];
+                    arrayCol[counter+width] = data[j][i];
+                    arrayCol[counter+width+1] = data[j][i];
+                    arrayCol[counter+width+2] = data[j][i];
+                    arrayCol[counter+2*width] = data[j][i];
+                    arrayCol[counter+2*width+1] = data[j][i];
+                    arrayCol[counter+2*width+2] = data[j][i];
+
                     counter ++;
                 }
+                counter+=width;
             }
             bmp = Bitmap.createBitmap(arrayCol, width, height, Bitmap.Config.ARGB_8888);
 

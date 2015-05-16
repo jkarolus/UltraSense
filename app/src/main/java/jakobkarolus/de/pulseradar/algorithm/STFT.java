@@ -51,6 +51,8 @@ public class STFT {
             }
 
             stft[col] = getSingleSideSpectrum(magnitude, rown);
+            for(int i=0; i < rown;i++)
+                stft[col][i] = 20*Math.log10(stft[col][i] + 1e-6);
             indx +=hopSize;
             col++;
 

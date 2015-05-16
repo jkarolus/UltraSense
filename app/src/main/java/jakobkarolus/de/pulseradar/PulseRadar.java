@@ -194,32 +194,26 @@ public class PulseRadar extends ActionBarActivity {
 
         @Override
         protected void onPostExecute(double[][] stft) {
-            pd.dismiss();
+            currentSTFT = stft;
             /*
             try {
-                FileWriter fw = new FileWriter(new File(PulseRadar.this.getExternalCacheDir().getAbsolutePath() + "/output.txt"), false);
-                for (int i = 0; i < stft.length; i++) {
-                    for (int j = 0; j < stft[i].length; j++)
-                        if (j == stft[i].length - 1)
-                            fw.write(stft[i][j] + ";\n");
+                FileWriter writer = new FileWriter(new File(PulseRadar.this.getExternalCacheDir().getAbsolutePath() + "/output.txt"), false);
+                for(int i=0; i < currentSTFT.length; i++){
+                    for(int j=0; j < currentSTFT[i].length; j++){
+                        if(j == currentSTFT[i].length-1)
+                            writer.write(currentSTFT[i][j] + ";\n");
                         else
-                            fw.write(stft[i][j] + ",");
+                            writer.write(currentSTFT[i][j] + ",");
+                    }
                 }
-                fw.flush();
-                fw.close();
-            }catch(IOException e){
-
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             */
-            /*
-            SpectrogramView specView = new SpectrogramView(PulseRadar.this, convertToGreyscale(stft));
-            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.MATCH_PARENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT);
-            params.addRule(RelativeLayout.BELOW, R.id.info_text);
-            ((RelativeLayout) rootView).addView(specView, params);
-            */
-            currentSTFT = stft;
+            pd.dismiss();
+
             FragmentTransaction ft = getFragmentManager().beginTransaction();
             ft.replace(R.id.container, new Spectrogram(), Spectrogram.class.getName());
             ft.addToBackStack(Spectrogram.class.getName());
@@ -279,8 +273,15 @@ public class PulseRadar extends ActionBarActivity {
             });
         }
 
-        double[] data = convertToDoubles(converToShorts(rawData));
+        double[] data = refineData(convertToDoubles(converToShorts(rawData)));
         return data;
+    }
+
+    private double[] refineData(double[] data) {
+        //delete first and last second
+        double[] refinedData = new double[data.length-2*SAMPLE_RATE];
+        System.arraycopy(data, SAMPLE_RATE, refinedData, 0, data.length-2*SAMPLE_RATE);
+        return refinedData;
     }
 
     private short[] converToShorts(byte[] rawData) {
@@ -301,26 +302,58 @@ public class PulseRadar extends ActionBarActivity {
     }
 
     private int[][] convertToGreyscale(double[][] stft) {
-        double maxValue = findMax(stft);
+        double maxValue = findMax(stft, false);
+        double minValue = findMin(stft, false);
         int[][] spec = new int[stft.length][stft[0].length];
         for (int i = 0; i < stft.length; i++) {
             for (int j = 0; j < stft[i].length; j++) {
-                int value = 255 - (int) ((stft[i][j]/maxValue)*255.0);
+                int value = Math.max(0, Math.min(255, (int) (((stft[i][j] - minValue) / (maxValue - minValue)) * 255.0)));
+                value = 255-value;
                 spec[i][j] = Color.rgb(value, value, value);
             }
         }
         return spec;
     }
 
-    private double findMax(double[][] stft) {
+    private int[][] convertToHeatmap(double[][] stft) {
+        double maxValue = findMax(stft, true);
+        int[][] spec = new int[stft.length][stft[0].length];
+        for (int i = 0; i < stft.length; i++) {
+            for (int j = 0; j < stft[i].length; j++) {
+                //int value = 255 - (int) ((stft[i][j]/maxValue)*255.0);
+
+                double ratio = 2 * stft[i][j] /maxValue;
+
+                int b = (int) Math.round(Math.max(0.0, 255.0*(1.0 - ratio)));
+                int r = (int) Math.round(Math.max(0.0, 255.0 * (ratio - 1.0)));
+                int g = 255 - b - r;
+                //spec[i][j] = Color.rgb(value, value, value);
+                spec[i][j] = Color.rgb(r, g, b);
+            }
+        }
+        return spec;
+    }
+
+    private double findMax(double[][] stft, boolean topHalf) {
         double currentMax = Double.MIN_VALUE;
         for(int i=0; i < stft.length; i++){
-            for(int j=0; j < stft[i].length; j++){
+            for(int j=(topHalf ? stft[i].length/2 : 0); j < stft[i].length; j++){
                 if(stft[i][j] > currentMax)
                     currentMax = stft[i][j];
             }
         }
         return currentMax;
+    }
+
+    private double findMin(double[][] stft, boolean topHalf) {
+        double currentMin = Double.MAX_VALUE;
+        for(int i=0; i < stft.length; i++){
+            for(int j=(topHalf ? stft[i].length/2 : 0); j < stft[i].length; j++){
+                if(stft[i][j] < currentMin)
+                    currentMin = stft[i][j];
+            }
+        }
+        return currentMin;
     }
 
     private double[] generateTestData() {
