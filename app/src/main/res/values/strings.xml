@@ -8,5 +8,6 @@
     <string name="input_filename_record">Filename</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
-    <string name="info">Info:\nFiles are saved in the app-own directory (usually ...\\Android\\data\\jakobkarolus.de.pulseradar\\)</string>
+    <string name="info">Info:\nFiles are saved in \\Downloads\\PulseRadar</string>
+    <string name="spec_info_text">Spectrogram showing the original 20kHz line at the bottom after high-pass filtering, modulation and downsampling.</string>
 </resources>

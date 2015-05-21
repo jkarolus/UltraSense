@@ -21,4 +21,15 @@ public class AlgoHelper {
 
     }
 
+    public static double[] generateSignal(double frequency, int length, double amplitude, double sampleRate){
+
+        double[] signal = new double[length];
+
+        for(int i=0; i< length; i++){
+            signal[i] = amplitude * Math.sin(frequency*2.0*Math.PI*(i/sampleRate));
+        }
+
+        return signal;
+    }
+
 }

@@ -40,11 +40,20 @@
         android:text="@string/info"/>
 
     <Button
-        android:layout_below="@id/info_text"
-        android:id="@+id/button_fft"
-        android:text="Compute STFT of last record"
-        android:enabled="false"
-        android:onClick="testButton"
+    android:layout_below="@id/info_text"
+    android:id="@+id/button_fft"
+    android:text="Compute STFT of last record"
+    android:enabled="true"
+    android:onClick="computeSTFT"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+
+    <Button
+        android:layout_below="@id/button_fft"
+        android:id="@+id/button_last_spec"
+        android:text="Show last spectrogram"
+        android:enabled="true"
+        android:onClick="showLastSpec"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
