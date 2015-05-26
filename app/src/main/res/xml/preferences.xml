@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:key="pref_mode"
+        android:title="@string/pref_mode"
+        android:dialogTitle="@string/pref_mode"
+        android:entries="@array/pref_mode_entries"
+        android:entryValues="@array/pref_mode_values"
+        android:defaultValue="CW"
+        android:summary="CW"/>
+</PreferenceScreen>

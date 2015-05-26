@@ -9,5 +9,6 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="info">Info:\nFiles are saved in \\Downloads\\PulseRadar</string>
-    <string name="spec_info_text">Spectrogram showing the original 20kHz line at the bottom after high-pass filtering, modulation and downsampling.</string>
+    <string name="spec_info_text">Spectrogram showing the original 20kHz line at the bottom after high-pass filtering, modulation and downsampling. Note that the first and last second are trimmed!</string>
+    <string name="pref_mode">Ultrasound mode</string>
 </resources>
