@@ -14,8 +14,9 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.preference.Preference;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -29,6 +30,9 @@ import java.io.IOException;
 
 import jakobkarolus.de.pulseradar.R;
 import jakobkarolus.de.pulseradar.algorithm.AudioManager;
+import jakobkarolus.de.pulseradar.algorithm.CWSignalGenerator;
+import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
+import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 
 /**
@@ -50,12 +54,14 @@ public class PulseRadarFragment extends Fragment{
     private Button showLastSpec;
     private View rootView;
 
+    private String prefMode;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        audioManager = new AudioManager(getActivity());
+        audioManager = new AudioManager(getActivity(), new CWSignalGenerator(20000, 0.1, 1.0, 44100));
         stftManager = new StftManager();
     }
 
@@ -151,6 +157,28 @@ public class PulseRadarFragment extends Fragment{
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         AskForFileNameDialog fileNameDialog = new AskForFileNameDialog();
         fileNameDialog.show(ft, "FileNameDialog");
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_settings).setVisible(true);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        audioManager.setSignalGenerator(getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity())));
+    }
+
+    private SignalGenerator getSignalGeneratorForMode(SharedPreferences sharedPreferences) {
+        String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
+        if(mode.equals(SettingsFragment.FMCW_MODE)) {
+            //TODO: add custom freq and stuff
+            return new FMCWSignalGenerator(20000, 19000, 0.1, 20.0, 44100, 1.0f, false);
+        }
+        else {
+            return new CWSignalGenerator(20000, 0.1, 1.0, 44100);
+        }
     }
 
 
@@ -277,6 +305,18 @@ public class PulseRadarFragment extends Fragment{
 
     @SuppressLint("ValidFragment")
     public class Spectrogram extends Fragment {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setHasOptionsMenu(true);
+
+        }
+
+        @Override
+        public void onPrepareOptionsMenu(Menu menu) {
+            menu.findItem(R.id.action_settings).setVisible(false);
+        }
 
         public Spectrogram(){
 

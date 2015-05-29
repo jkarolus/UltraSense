@@ -6,6 +6,5 @@
         android:dialogTitle="@string/pref_mode"
         android:entries="@array/pref_mode_entries"
         android:entryValues="@array/pref_mode_values"
-        android:defaultValue="CW"
-        android:summary="CW"/>
+        android:defaultValue="CW" />
 </PreferenceScreen>

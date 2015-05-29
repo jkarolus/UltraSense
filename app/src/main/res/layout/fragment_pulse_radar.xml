@@ -23,19 +23,12 @@
         android:onClick="stopRecord"
         android:text="@string/button_stop_record"/>
 
-    <Button
-        android:layout_below="@id/button_stop_record"
-        android:id="@+id/button_play_signal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:onClick="playSignal"
-        android:text="@string/button_play_signal"/>
 
     <TextView
         android:id="@+id/info_text"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/button_play_signal"
+        android:layout_below="@id/button_stop_record"
         android:layout_marginTop="10dp"
         android:text="@string/info"/>
 

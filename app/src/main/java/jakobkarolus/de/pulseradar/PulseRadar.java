@@ -25,6 +25,7 @@ public class PulseRadar extends ActionBarActivity{
 
     }
 
+
     @Override
     public void onBackPressed() {
         if (getFragmentManager().getBackStackEntryCount() > 0) {
@@ -48,7 +49,6 @@ public class PulseRadar extends ActionBarActivity{
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             FragmentTransaction ft = getFragmentManager().beginTransaction();
             ft.replace(R.id.container, new SettingsFragment(), SettingsFragment.class.getName());

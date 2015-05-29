@@ -33,14 +33,17 @@ public class AudioManager {
     private AudioTrack at;
     private AudioRecord ar;
 
+    private SignalGenerator signalGen;
+
     private boolean recordRunning = false;
     private double currentFreq;
 
     private static final int minSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
 
-    public AudioManager(Context ctx){
+    public AudioManager(Context ctx, SignalGenerator signalGen){
         this.ctx = ctx;
+        this.signalGen = signalGen;
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
 
@@ -93,10 +96,10 @@ public class AudioManager {
             public void run() {
 
                 while(recordRunning){
-                    byte[] audio = generateAudio(currentFreq, 0.1, 1.0);
-                    at.flush();
+                    byte[] audio =  signalGen.generateAudio();
                     at.write(audio, 0, audio.length);
                 }
+                at.flush();
             }
         });
         playThread.start();
@@ -112,6 +115,8 @@ public class AudioManager {
     public void stopRecord() throws IOException {
         recordRunning = false;
         ar.stop();
+        at.pause();
+        at.flush();
         dos.flush();
         dos.close();
     }
@@ -139,7 +144,7 @@ public class AudioManager {
 
         DataOutputStream output = null;
         try {
-            output = new DataOutputStream(new FileOutputStream(new File(fileDir + "/" + waveFileName + ".wav")));
+            output = new DataOutputStream(new FileOutputStream(new File(fileDir + "/" + waveFileName + ".wav"), false));
             // WAVE header
             // see http://ccrma.stanford.edu/courses/422/projects/WaveFormat/
             writeString(output, "RIFF"); // chunk id
@@ -219,31 +224,6 @@ public class AudioManager {
         return data;
     }
 
-    private byte[] generateAudio(double frequency, double seconds, double amplitude){
-
-        float[] buffer = new float[(int) (seconds * SAMPLE_RATE)];
-
-
-        for (int sample = 0; sample < buffer.length; sample++) {
-            double time = sample / (double) SAMPLE_RATE;
-
-            //if(sample == buffer.length/2)
-            //  buffer[sample] = 1.0f;
-            buffer[sample] = (float) (amplitude * Math.sin(frequency * 2.0 * Math.PI * time));
-        }
-
-        final byte[] byteBuffer = new byte[buffer.length * 2];
-        int bufferIndex = 0;
-        for (int i = 0; i < byteBuffer.length; i++) {
-            final int x = (int) (buffer[bufferIndex++] * 32767.0);
-            byteBuffer[i] = (byte) x;
-            i++;
-            byteBuffer[i] = (byte) (x >>> 8);
-        }
-
-        return byteBuffer;
-
-    }
 
     private void writeInt(final DataOutputStream output, final int value) throws IOException {
         output.write(value >> 0);
@@ -284,5 +264,9 @@ public class AudioManager {
 
     public boolean hasRecordData() {
         return tempFile != null && tempFile.length() > 0;
+    }
+
+    public void setSignalGenerator(SignalGenerator signalGenerator) {
+        this.signalGen = signalGenerator;
     }
 }
