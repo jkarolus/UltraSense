@@ -144,7 +144,7 @@ public class AudioManager {
 
         DataOutputStream output = null;
         try {
-            output = new DataOutputStream(new FileOutputStream(new File(fileDir + "/" + waveFileName + ".wav"), false));
+            output = new DataOutputStream(new FileOutputStream(new File(fileDir + waveFileName + ".wav"), false));
             // WAVE header
             // see http://ccrma.stanford.edu/courses/422/projects/WaveFormat/
             writeString(output, "RIFF"); // chunk id
