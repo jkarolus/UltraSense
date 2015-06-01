@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="pref_mode_entries">
-        <item>CW</item>
-        <item>FMCW</item>
+        <item>Continious Wave</item>
+        <item>Frequency Modulated Continious Wave</item>
     </string-array>
     <string-array name="pref_mode_values">
         <item>CW</item>

@@ -44,11 +44,10 @@ public class AudioManager {
     private static final int minSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
 
-    public AudioManager(Context ctx, SignalGenerator signalGen){
+    public AudioManager(Context ctx){
         this.ctx = ctx;
         new File(fileDir).mkdirs();
 
-        this.signalGen = signalGen;
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
 

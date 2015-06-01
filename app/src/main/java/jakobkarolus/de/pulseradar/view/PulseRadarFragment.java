@@ -61,7 +61,7 @@ public class PulseRadarFragment extends Fragment{
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        audioManager = new AudioManager(getActivity(), new CWSignalGenerator(20000, 0.1, 1.0, 44100));
+        audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
     }
 
@@ -172,11 +172,23 @@ public class PulseRadarFragment extends Fragment{
 
     private SignalGenerator getSignalGeneratorForMode(SharedPreferences sharedPreferences) {
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
-        if(mode.equals(SettingsFragment.FMCW_MODE)) {
-            //TODO: add custom freq and stuff
-            return new FMCWSignalGenerator(20000, 19000, 0.1, 20.0, 44100, 1.0f, false);
-        }
-        else {
+        try {
+            if(mode.equals(SettingsFragment.FMCW_MODE)) {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                double botFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_BOT_FREQ, ""));
+                double topFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_TOP_FREQ, ""));
+                double chirpDur = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_CHIRP_DUR, ""));
+                double chirpCycles = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_CHIRP_CYCLES, ""));
+                boolean rampUp = sharedPreferences.getBoolean(SettingsFragment.KEY_FMCW_RAMP_UP, false);
+
+                return new FMCWSignalGenerator(topFreq, botFreq, chirpDur, chirpCycles, 44100, 1.0f, !rampUp);
+            }
+            else {
+                double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
+                return new CWSignalGenerator(freq, 0.1, 1.0, 44100);
+            }
+        }catch (NumberFormatException e) {
+            Toast.makeText(getActivity(), "Specified Parameters are not valid! Using defaults!", Toast.LENGTH_LONG).show();
             return new CWSignalGenerator(20000, 0.1, 1.0, 44100);
         }
     }

@@ -11,4 +11,12 @@
     <string name="info">Info:\nFiles are saved in \\Downloads\\PulseRadar</string>
     <string name="spec_info_text">Spectrogram showing the original 20kHz line at the bottom after high-pass filtering, modulation and downsampling. Note that the first and last second are trimmed!</string>
     <string name="pref_mode">Ultrasound mode</string>
+    <string name="cw_paras">CW Parameters</string>
+    <string name="pref_title_fmcw_bottom_freq">Bottom Frequency in Hz</string>
+    <string name="pref_title_fmcw_top_freq">Top Frequency in Hz</string>
+    <string name="pref_title_fmcw_chirp_duration">Chirp Duration in seconds</string>
+    <string name="pref_title_fmcw_chirp_cycles">Chirp Cycles</string>
+    <string name="pref_fmcw_paras">FMCW Parameters</string>
+    <string name="pref_title_fmcw_ramp_up">Ramp up and down</string>
+    <string name="pref_title_cw_freq">Frequency</string>
 </resources>

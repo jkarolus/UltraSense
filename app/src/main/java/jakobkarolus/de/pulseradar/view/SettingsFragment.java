@@ -2,8 +2,12 @@ package jakobkarolus.de.pulseradar.view;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 
 import jakobkarolus.de.pulseradar.R;
@@ -16,6 +20,17 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     public static final String PREF_MODE = "pref_mode";
     public static final String CW_MODE = "CW";
     public static final String FMCW_MODE = "FMCW";
+    private static final String FMCW_PARAS_KEY = "pref_key_fmcw_paras";
+    private static final String CW_PARAS_KEY = "pref_key_cw_paras";
+
+    public static final String KEY_FMCW_BOT_FREQ = "pref_key_fmcw_bottom_freq";
+    public static final String KEY_FMCW_TOP_FREQ = "pref_key_fmcw_top_freq";
+    public static final String KEY_FMCW_CHIRP_DUR = "pref_key_fmcw_chirp_duration";
+    public static final String KEY_FMCW_CHIRP_CYCLES = "pref_key_fmcw_chirp_cycles";
+    public static final String KEY_FMCW_RAMP_UP = "pref_key_fmcw_ramp_up";
+
+    public static final String KEY_CW_FREQ = "pref_key_cw_freq";
+
 
 
     @Override
@@ -24,16 +39,49 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
         setHasOptionsMenu(true);
 
         addPreferencesFromResource(R.xml.preferences);
-        Preference prefMode = findPreference(PREF_MODE);
-        prefMode.setSummary(getPreferenceManager().getSharedPreferences().getString(PREF_MODE, ""));
+        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+        togglePreferences();
+    }
+
+    private void togglePreferences() {
+        String prefMode = getPreferenceManager().getSharedPreferences().getString(PREF_MODE, "");
+        getPreferenceScreen().removeAll();
+        addPreferencesFromResource(R.xml.preferences);
+        if(prefMode.equals(CW_MODE)){
+            getPreferenceScreen().removePreference(findPreference(FMCW_PARAS_KEY));
+        }
+        else
+            getPreferenceScreen().removePreference(findPreference(CW_PARAS_KEY));
+
+        updateSummaries();
+    }
+
+    private void updateSummaries() {
+        for(int i=0; i < getPreferenceScreen().getPreferenceCount(); i++){
+            Preference p = getPreferenceScreen().getPreference(i);
+            updateSummaryForPreference(p);
+        }
+    }
+
+    private void updateSummaryForPreference(Preference p){
+        if(p instanceof ListPreference){
+            ListPreference lp = (ListPreference) p;
+            lp.setSummary(lp.getValue());
+        }
+        if(p instanceof EditTextPreference){
+            EditTextPreference ep = (EditTextPreference) p;
+            ep.setSummary(ep.getText());
+        }
+        if(p instanceof PreferenceCategory){
+            PreferenceCategory pc = (PreferenceCategory) p;
+            for(int i=0; i < pc.getPreferenceCount(); i++)
+                updateSummaryForPreference(pc.getPreference(i));
+        }
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if(key.equals(SettingsFragment.PREF_MODE)){
-            Preference prefMode = findPreference(key);
-            prefMode.setSummary(sharedPreferences.getString(key, "CW"));
-        }
+        togglePreferences();
     }
 
     @Override
