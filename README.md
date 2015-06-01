@@ -4,8 +4,9 @@ This repository provides access to the following tools:
 
 <b>PulseRadar</b>
 
-Android application which is capable of recording sound files while emitting a constant 20kHz signal.
+Android application which is capable of recording sound files while emitting CW and FMCW signals.
 Use this to record your own wave files when trying out ultrasound sensing.
+You can specify signal parameters in the settings. Note however that the computation and display of the spectrogram is optimized for frequency around 20kHz.
 
 <b>Matlab scripts</b>
 
