@@ -5,7 +5,10 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -43,6 +46,8 @@ public class AudioManager {
 
     public AudioManager(Context ctx, SignalGenerator signalGen){
         this.ctx = ctx;
+        new File(fileDir).mkdirs();
+
         this.signalGen = signalGen;
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
@@ -119,6 +124,7 @@ public class AudioManager {
         at.flush();
         dos.flush();
         dos.close();
+
     }
 
     /**
@@ -144,7 +150,8 @@ public class AudioManager {
 
         DataOutputStream output = null;
         try {
-            output = new DataOutputStream(new FileOutputStream(new File(fileDir + waveFileName + ".wav"), false));
+            File file = new File(fileDir + waveFileName + ".wav");
+            output = new DataOutputStream(new FileOutputStream(file, false));
             // WAVE header
             // see http://ccrma.stanford.edu/courses/422/projects/WaveFormat/
             writeString(output, "RIFF"); // chunk id
@@ -168,6 +175,15 @@ public class AudioManager {
                 bytes.putShort(s);
             }
             output.write(bytes.array());
+
+            MediaScannerConnection.scanFile(ctx,
+                    new String[]{file.toString()}, null,
+                    new MediaScannerConnection.OnScanCompletedListener() {
+                        public void onScanCompleted(String path, Uri uri) {
+                            Log.i("ExternalStorage", "Scanned " + path + ":");
+                            Log.i("ExternalStorage", "-> uri=" + uri);
+                        }
+                    });
         }
 
         finally {
