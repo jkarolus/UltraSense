@@ -30,8 +30,10 @@ public class AudioManager {
 
     private static final int SAMPLE_RATE = 44100;
     private static final double STD_FREQ = 20000;
-    private DataOutputStream dos;
-    private File tempFile;
+    private DataOutputStream dosSend;
+    private DataOutputStream dosRec;
+    private File tempFileRec;
+    private File tempFileSend;
 
     private AudioTrack at;
     private AudioRecord ar;
@@ -47,10 +49,6 @@ public class AudioManager {
     public AudioManager(Context ctx){
         this.ctx = ctx;
         new File(fileDir).mkdirs();
-
-        at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
-        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
-
         currentFreq = STD_FREQ;
     }
 
@@ -62,14 +60,24 @@ public class AudioManager {
      */
     public void startRecord() throws FileNotFoundException {
 
-        tempFile = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp.raw");
+        at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
+        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
 
-        if(tempFile.exists())
-            tempFile.delete();
+        tempFileRec = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_rec.raw");
+        tempFileSend = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_send.raw");
 
-        dos = new DataOutputStream(new FileOutputStream(tempFile));
-        ar.startRecording();
-        recordRunning = true;
+        if(tempFileRec.exists())
+            tempFileRec.delete();
+
+        if(tempFileSend.exists())
+            tempFileSend.delete();
+
+        dosRec = new DataOutputStream(new FileOutputStream(tempFileRec));
+        dosSend = new DataOutputStream(new FileOutputStream(tempFileSend));
+
+
+        final byte[] audio =  signalGen.generateAudio();
+
         Thread recordThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -77,36 +85,66 @@ public class AudioManager {
                 short[] buffer = new short[minSize];
                 while(recordRunning){
                     ar.read(buffer, 0, minSize);
-                    try {
-                        ByteBuffer bytes = ByteBuffer.allocate(buffer.length * 2);
-                        for (short s : buffer) {
-                            bytes.putShort(s);
-                        }
-                        dos.write(bytes.array());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    writeShortBufferToStream(buffer, dosRec);
+                }
+
+                try {
+                    dosRec.flush();
+                    dosRec.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
 
             }
         });
-        recordThread.start();
-
-
-        at.play();
 
         Thread playThread = new Thread(new Runnable() {
             @Override
             public void run() {
 
+                at.play();
                 while(recordRunning){
-                    byte[] audio =  signalGen.generateAudio();
                     at.write(audio, 0, audio.length);
+                    writeByteBufferToStream(audio, dosSend);
                 }
-                at.flush();
+                ar.stop();
             }
         });
+
+        ar.startRecording();
+        recordRunning = true;
+        recordThread.start();
         playThread.start();
+
+    }
+
+
+    private void writeByteBufferToStream(byte[] buffer, DataOutputStream dos){
+
+        try{
+            ByteBuffer bytes = ByteBuffer.allocate(buffer.length);
+            for(int i=0; i < buffer.length; i+=2){
+                byte byte1 = buffer[i];
+                byte byte2 = buffer[i+1];
+                short newshort = (short) ((byte2 << 8) + (byte1&0xFF));
+                bytes.putShort(newshort);
+            }
+            dos.write(bytes.array());
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void writeShortBufferToStream(short[] buffer, DataOutputStream dos) {
+        try {
+            ByteBuffer bytes = ByteBuffer.allocate(buffer.length * 2);
+            for (short s : buffer) {
+                bytes.putShort(s);
+            }
+            dos.write(bytes.array());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -118,28 +156,30 @@ public class AudioManager {
      */
     public void stopRecord() throws IOException {
         recordRunning = false;
-        ar.stop();
-        at.pause();
-        at.flush();
-        dos.flush();
-        dos.close();
-
     }
 
     /**
-     * saves the current recorded audio (if any) under the given filename
+     * saves the current recorded audio (if any) under the given filename.<br>
+     * Also saves a copy of the send audio data.
      *
      * @param waveFileName
      * @throws IOException
      */
-    public void saveWaveFile(String waveFileName) throws IOException {
+    public void saveWaveFiles(String waveFileName) throws IOException {
 
-        int dataLength = (int) tempFile.length();
+       saveWave(waveFileName + "_rec", tempFileRec);
+       saveWave(waveFileName + "_send", tempFileSend);
+
+    }
+
+
+    private void saveWave(String fileName, File fileToSave) throws IOException {
+        int dataLength = (int) fileToSave.length();
         byte[] rawData = new byte[dataLength];
 
         DataInputStream input = null;
         try {
-            input = new DataInputStream(new FileInputStream(tempFile));
+            input = new DataInputStream(new FileInputStream(fileToSave));
             input.read(rawData);
         } finally {
             if (input != null) {
@@ -149,7 +189,7 @@ public class AudioManager {
 
         DataOutputStream output = null;
         try {
-            File file = new File(fileDir + waveFileName + ".wav");
+            File file = new File(fileDir + fileName + ".wav");
             output = new DataOutputStream(new FileOutputStream(file, false));
             // WAVE header
             // see http://ccrma.stanford.edu/courses/422/projects/WaveFormat/
@@ -191,26 +231,51 @@ public class AudioManager {
             }
         }
     }
-
     /**
      * converts recording byte stream into double array
+     *
+     * @param refine whether to refine the recorded data (trim first and last second)
      * @return double array of the latest recorded data
      */
-    public double[] getRecordData() {
+    public double[] getRecordData(boolean refine) {
 
-        int dataLength = (int) tempFile.length();
+        int dataLength = (int) tempFileRec.length();
         byte[] rawData = new byte[dataLength];
 
         DataInputStream input = null;
         try {
-            input = new DataInputStream(new FileInputStream(tempFile));
+            input = new DataInputStream(new FileInputStream(tempFileRec));
             input.read(rawData);
             input.close();
         } catch (IOException e){
             //
         }
 
-        double[] data = refineData(convertToDoubles(converToShorts(rawData)));
+        if(refine)
+            return refineData(convertToDoubles(converToShorts(rawData)));
+        else
+            return convertToDoubles(converToShorts(rawData));
+    }
+
+    /**
+     * converts the sent byte stream into double array
+     * @return double array of the latest sent data
+     */
+    public double[] getSentData() {
+
+        int dataLength = (int) tempFileSend.length();
+        byte[] rawData = new byte[dataLength];
+
+        DataInputStream input = null;
+        try {
+            input = new DataInputStream(new FileInputStream(tempFileSend));
+            input.read(rawData);
+            input.close();
+        } catch (IOException e){
+            //
+        }
+
+        double[] data = convertToDoubles(converToShorts(rawData));
         return data;
     }
 
@@ -278,7 +343,7 @@ public class AudioManager {
     }
 
     public boolean hasRecordData() {
-        return tempFile != null && tempFile.length() > 0;
+        return tempFileRec != null && tempFileRec.length() > 0;
     }
 
     public void setSignalGenerator(SignalGenerator signalGenerator) {

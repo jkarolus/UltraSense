@@ -42,11 +42,19 @@
     android:layout_height="wrap_content" />
 
     <Button
-        android:layout_below="@id/button_fft"
-        android:id="@+id/button_last_spec"
-        android:text="Show last spectrogram"
+    android:layout_below="@id/button_fft"
+    android:id="@+id/button_last_spec"
+    android:text="Show last spectrogram"
+    android:enabled="true"
+    android:onClick="showLastSpec"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+
+    <Button
+        android:layout_below="@id/button_last_spec"
+        android:id="@+id/button_test_corr"
+        android:text="Apply Correlation Correction"
         android:enabled="true"
-        android:onClick="showLastSpec"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

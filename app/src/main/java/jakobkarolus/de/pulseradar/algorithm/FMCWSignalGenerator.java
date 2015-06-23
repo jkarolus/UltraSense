@@ -55,6 +55,7 @@ public class FMCWSignalGenerator implements SignalGenerator{
             }
         }
 
+
         final byte[] byteBuffer = new byte[buffer.length * 2];
         int bufferIndex = 0;
         for (int i = 0; i < byteBuffer.length; i++) {
@@ -65,5 +66,6 @@ public class FMCWSignalGenerator implements SignalGenerator{
         }
 
         return byteBuffer;
+
     }
 }

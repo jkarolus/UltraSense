@@ -29,6 +29,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import jakobkarolus.de.pulseradar.R;
+import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
 import jakobkarolus.de.pulseradar.algorithm.AudioManager;
 import jakobkarolus.de.pulseradar.algorithm.CWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
@@ -52,6 +53,7 @@ public class PulseRadarFragment extends Fragment{
     private Button stopButton;
     private Button computeStftButton;
     private Button showLastSpec;
+    private Button applyCorrelationCorrection;
     private View rootView;
 
     private String prefMode;
@@ -73,6 +75,7 @@ public class PulseRadarFragment extends Fragment{
         stopButton = (Button) rootView.findViewById(R.id.button_stop_record);
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
+        applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,8 +109,63 @@ public class PulseRadarFragment extends Fragment{
                 showLastSpec();
             }
         });
+        applyCorrelationCorrection.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                applyCorrelationCorrection();
+            }
+        });
 
         return rootView;
+    }
+
+    private void applyCorrelationCorrection() {
+
+        if(audioManager.hasRecordData()){
+            new ApplyCorrelationCorrectionTask().execute();
+        }
+        else{
+            Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+
+    private class ApplyCorrelationCorrectionTask extends AsyncTask<Void, String, Void> {
+
+        private ProgressDialog pd;
+
+        @Override
+        protected void onPreExecute() {
+            pd = ProgressDialog.show(getActivity(), "Calculating Correlation", "Please wait", true, false);
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            pd.setMessage(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            pd.dismiss();
+
+            //TODO: save the newly corrected data
+        }
+
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            double[] signal1 = audioManager.getSentData();
+            double[] signal2 = audioManager.getRecordData(false);
+            if(signal1.length != 0 || signal2.length != 0) {
+
+
+                //TODO: scale the data
+                double[] xcorr = AlgoHelper.xcorr(signal1, signal2);
+                saveDataToFile("correlation", xcorr);
+            }
+            return null;
+        }
     }
 
     private void showLastSpec() {
@@ -231,7 +289,7 @@ public class PulseRadarFragment extends Fragment{
 
         @Override
         protected Void doInBackground(Void... params) {
-            double[] data = audioManager.getRecordData();
+            double[] data = audioManager.getRecordData(true);
             if(data.length != 0) {
                 stftManager.setData(data);
                 publishProgress("Applying high pass filter");
@@ -297,7 +355,7 @@ public class PulseRadarFragment extends Fragment{
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
                             try {
-                                audioManager.saveWaveFile(fileName.getText().toString());
+                                audioManager.saveWaveFiles(fileName.getText().toString());
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
