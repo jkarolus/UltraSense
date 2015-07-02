@@ -14,6 +14,38 @@ import java.util.Arrays;
  */
 public class AlgoHelper {
 
+
+    public static double[] fftMagnitude(double[] x){
+        double[] win = getHannWindow(x.length);
+        for(int i=0; i < x.length; i++)
+            x[i] *= win[i];
+
+        FastFourierTransformer trans = new FastFourierTransformer(DftNormalization.STANDARD);
+        Complex[] result = trans.transform(x, TransformType.FORWARD);
+        double[] magnitudeColumn = new double[x.length/2+1];
+        for(int i=0; i < (x.length/2+1); i++){
+            double magnitude = result[i].getReal()*result[i].getReal() + result[i].getImaginary()*result[i].getImaginary();
+            //adjust for window ampflication
+            magnitude /= x.length;
+            magnitude /= sumWindowNorm(win);
+            //TODO adjust for nycquist or DC component necessary?
+
+            //log scale
+            magnitude = 20*Math.log10(magnitude+1e-6);
+            magnitudeColumn[i] = magnitude;
+        }
+
+        return magnitudeColumn;
+
+    }
+
+    private static double sumWindowNorm(double[] win) {
+        double sum=0.0;
+        for(int i=0; i < win.length; i++)
+            sum+= win[i];
+        return sum/((double) win.length);
+    }
+
     /**
      *
      *

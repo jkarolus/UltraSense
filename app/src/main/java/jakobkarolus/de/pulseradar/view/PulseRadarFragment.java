@@ -30,7 +30,7 @@ import java.io.IOException;
 
 import jakobkarolus.de.pulseradar.R;
 import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
-import jakobkarolus.de.pulseradar.algorithm.AudioManager;
+import jakobkarolus.de.pulseradar.audio.AudioManager;
 import jakobkarolus.de.pulseradar.algorithm.CWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;

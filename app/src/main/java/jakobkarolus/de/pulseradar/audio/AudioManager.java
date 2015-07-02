@@ -1,4 +1,4 @@
-package jakobkarolus.de.pulseradar.algorithm;
+package jakobkarolus.de.pulseradar.audio;
 
 import android.content.Context;
 import android.media.AudioFormat;
@@ -20,10 +20,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
+
 /**
  * Created by Jakob on 25.05.2015.
  */
-public class AudioManager {
+public class AudioManager{
 
     private Context ctx;
     private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
@@ -43,7 +45,8 @@ public class AudioManager {
     private boolean recordRunning = false;
     private double currentFreq;
 
-    private static final int minSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
+    //force a multiple of 4096
+    private static final int minSize = 4*4096;//AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
 
     public AudioManager(Context ctx){
