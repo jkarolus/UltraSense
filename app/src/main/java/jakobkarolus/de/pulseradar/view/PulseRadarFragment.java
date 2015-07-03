@@ -27,19 +27,27 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.R;
 import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
-import jakobkarolus.de.pulseradar.audio.AudioManager;
 import jakobkarolus.de.pulseradar.algorithm.CWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
+import jakobkarolus.de.pulseradar.audio.AudioManager;
+import jakobkarolus.de.pulseradar.features.Feature;
+import jakobkarolus.de.pulseradar.features.FeatureProcessor;
+import jakobkarolus.de.pulseradar.features.GaussianFeature;
 
 /**
  * Created by Jakob on 25.05.2015.
  */
-public class PulseRadarFragment extends Fragment{
+public class PulseRadarFragment extends Fragment implements FeatureProcessor{
 
     private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
     private Bitmap lastSpectrogram;
@@ -54,6 +62,7 @@ public class PulseRadarFragment extends Fragment{
     private Button computeStftButton;
     private Button showLastSpec;
     private Button applyCorrelationCorrection;
+    private Button testDetection;
     private View rootView;
 
     private String prefMode;
@@ -76,6 +85,7 @@ public class PulseRadarFragment extends Fragment{
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
         applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
+        testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,8 +125,43 @@ public class PulseRadarFragment extends Fragment{
                 applyCorrelationCorrection();
             }
         });
+        testDetection.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    testDetection();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         return rootView;
+    }
+
+    private void testDetection() throws FileNotFoundException {
+
+        Scanner scan = new Scanner(new File(fileDir + "test_data.txt"));
+        List<Double> dataList = new Vector<>();
+        while(scan.hasNext()){
+            Double d = Double.parseDouble(scan.next());
+            dataList.add(d);
+        }
+        double[] data = new double[dataList.size()];
+        for(int i=0; i < data.length; i++)
+            data[i] = dataList.get(i);
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+
+            private int counter=0;
+            @Override
+            public void run() {
+                //TODO: call featureDetector for every 4x4096 samples
+            }
+        }, 1000, 250);
+
+
     }
 
     private void applyCorrelationCorrection() {
@@ -128,6 +173,19 @@ public class PulseRadarFragment extends Fragment{
             Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
         }
 
+    }
+
+    @Override
+    public void processFeature(Feature feature) {
+        //TODO: implement more elaborate version
+        if(feature instanceof GaussianFeature){
+            GaussianFeature gf = (GaussianFeature) feature;
+            if(gf.getWeight() >= 60.0)
+                Toast.makeText(getActivity(), "DOWN", Toast.LENGTH_SHORT).show();
+            else if(gf.getWeight() <= -60.0)
+                Toast.makeText(getActivity(), "UP", Toast.LENGTH_SHORT).show();
+
+        }
     }
 
 
