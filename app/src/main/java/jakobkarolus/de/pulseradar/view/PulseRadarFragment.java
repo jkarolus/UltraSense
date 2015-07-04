@@ -15,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -23,7 +24,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -41,8 +45,11 @@ import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 import jakobkarolus.de.pulseradar.audio.AudioManager;
 import jakobkarolus.de.pulseradar.features.Feature;
+import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
+import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.GaussianFeature;
+import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -56,6 +63,7 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
 
     private AudioManager audioManager;
     private StftManager stftManager;
+    private FeatureDetector featureDetector;
 
     private Button startButton;
     private Button stopButton;
@@ -67,13 +75,17 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
 
     private String prefMode;
 
+    private FileWriter featWriter;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        audioManager = new AudioManager(getActivity());
+        audioManager = new AudioManager(getActivity(), this);
         stftManager = new StftManager();
+        featureDetector = new MeanBasedFD(4096, 2048, 1858, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        featureDetector.registerFeatureExtractor(new GaussianFE(this));
     }
 
     @Override
@@ -92,7 +104,7 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
             public void onClick(View v) {
                 try {
                     startRecord();
-                } catch (FileNotFoundException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -130,7 +142,7 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
             public void onClick(View v) {
                 try {
                     testDetection();
-                } catch (FileNotFoundException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -139,18 +151,61 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
         return rootView;
     }
 
-    private void testDetection() throws FileNotFoundException {
+    private void testDetection() throws IOException {
 
-        Scanner scan = new Scanner(new File(fileDir + "test_data.txt"));
-        List<Double> dataList = new Vector<>();
-        while(scan.hasNext()){
-            Double d = Double.parseDouble(scan.next());
-            dataList.add(d);
+        new TestDetectionTask().execute();
+
+
+    }
+
+    private class TestDetectionTask extends AsyncTask<Void, String, Void> {
+
+        private ProgressDialog pd;
+
+        @Override
+        protected void onPreExecute() {
+            pd = ProgressDialog.show(getActivity(), "Testing Detection", "Please wait", true, false);
         }
-        double[] data = new double[dataList.size()];
-        for(int i=0; i < data.length; i++)
-            data[i] = dataList.get(i);
 
+        @Override
+        protected void onProgressUpdate(String... values) {
+            pd.setMessage(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            pd.dismiss();
+
+        }
+
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            try {
+
+                //save it for comparison -> the features
+                featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
+
+                List<Double> dataList = new Vector<>();
+                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "test_data_up_down.bin"));
+                boolean notEnded = true;
+
+                publishProgress(new String[]{"Reading values"});
+                while (notEnded) {
+                    try {
+                        dataList.add(din.readDouble());
+                        if (dataList.size() >= 100000)
+                            notEnded = false;
+                    } catch (EOFException e) {
+                        notEnded = false;
+                    }
+                }
+                double[] data = new double[dataList.size()];
+                for (int i = 0; i < data.length; i++)
+                    data[i] = dataList.get(i);
+
+        /*
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
 
@@ -160,8 +215,31 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
                 //TODO: call featureDetector for every 4x4096 samples
             }
         }, 1000, 250);
+        */
+                long time = 0;
+                int counter = 0;
 
+                publishProgress(new String[]{"Calculating features"});
+                int length = 4 * 4096;
+                double[] buffer = new double[length];
+                for (int i = 0; i <= data.length - length; i += length) {
+                    System.arraycopy(data, i, buffer, 0, length);
+                    long tempTime = System.currentTimeMillis();
+                    featureDetector.checkForFeatures(buffer);
+                    time += System.currentTimeMillis()-tempTime;
+                    counter++;
+                }
+                featWriter.close();
+                time /= counter;
+                Log.e("TIME", "" + time);
+                Log.e("TIME_FFT", "" + ((MeanBasedFD) featureDetector).getTime());
 
+            }
+            catch(IOException e){
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
 
     private void applyCorrelationCorrection() {
@@ -177,15 +255,40 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
 
     @Override
     public void processFeature(Feature feature) {
-        //TODO: implement more elaborate version
-        if(feature instanceof GaussianFeature){
-            GaussianFeature gf = (GaussianFeature) feature;
-            if(gf.getWeight() >= 60.0)
-                Toast.makeText(getActivity(), "DOWN", Toast.LENGTH_SHORT).show();
-            else if(gf.getWeight() <= -60.0)
-                Toast.makeText(getActivity(), "UP", Toast.LENGTH_SHORT).show();
 
+
+        try {
+
+            //TODO: implement more elaborate version
+            if (feature instanceof GaussianFeature) {
+                GaussianFeature gf = (GaussianFeature) feature;
+
+                featWriter.write(gf.getMu() + ",\t" + gf.getSigma() + ",\t" + gf.getWeight() + "\n");
+
+                if (gf.getWeight() >= 60.0)
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getActivity(), "DOWN", Toast.LENGTH_SHORT).show();
+                            Log.e("GESTURE", "DOWN");
+                        }
+                    });
+                else if (gf.getWeight() <= -60.0)
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getActivity(), "UP", Toast.LENGTH_SHORT).show();
+                            Log.e("GESTURE", "UP");
+
+                        }
+                    });
+
+            }
         }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -252,7 +355,11 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
         }
     }
 
-    private void startRecord() throws FileNotFoundException {
+    private void startRecord() throws IOException {
+
+        //save it for comparison -> the features
+        featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
+
         startButton.setEnabled(false);
         startButton.setText("Recording...");
         startButton.setBackgroundColor(Color.RED);
@@ -261,6 +368,10 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
     }
 
     private void stopRecord() throws IOException {
+
+        //save it for comparison -> the features
+        if(featWriter != null)
+            featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
 
         startButton.setEnabled(true);
         startButton.setText(R.string.button_start_record);

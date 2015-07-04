@@ -7,6 +7,9 @@ import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
  */
 public class MeanBasedFD extends FeatureDetector{
 
+    private long time=0;
+    private long counter=0;
+
     private int fftLength;
     private int hopSize;
     private int carrierIdx;
@@ -16,10 +19,13 @@ public class MeanBasedFD extends FeatureDetector{
     private double featLowThreshold;
     private int featSlackWidth;
     private int currentSlack;
+    private double[] win;
+    private double windowAmp;
 
     private double[] carryOver;
+    private boolean carryAvailable;
 
-    public MeanBasedFD(int fftLength, int hopSize, int carrierIdx, double halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth) {
+    public MeanBasedFD(int fftLength, int hopSize, int carrierIdx, double halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
         super();
         this.fftLength = fftLength;
         this.hopSize = hopSize;
@@ -31,24 +37,52 @@ public class MeanBasedFD extends FeatureDetector{
         this.featSlackWidth = featSlackWidth;
         this.currentSlack = 0;
         this.carryOver = new double[hopSize];
+        this.win = win;
+        this.windowAmp = AlgoHelper.sumWindowNorm(win);
+
+        //instantiate new FD every time recording starts to reset carry
+        this.carryAvailable = false;
     }
 
     @Override
     public void checkForFeatures(double[] audioBuffer) {
 
+        //TODO: refine the signal -> filter and scaleToOne
+        AlgoHelper.scaleToOne(audioBuffer);
+        AlgoHelper.applyHighPassFilter(audioBuffer);
+
+        double[] tempBuffer;
         //buffer is assumed to be a multiple of 4096, plus added hopSize from the previous buffer
-        double[] tempBuffer = new double[audioBuffer.length+hopSize];
-        System.arraycopy(carryOver, 0, tempBuffer, 0, hopSize);
-        System.arraycopy(audioBuffer, 0, tempBuffer, hopSize, audioBuffer.length);
-        //save the carry-over for the next buffer
-        System.arraycopy(audioBuffer, audioBuffer.length-hopSize, carryOver, 0, hopSize);
+        if(carryAvailable) {
+            tempBuffer = new double[audioBuffer.length + hopSize];
+            System.arraycopy(carryOver, 0, tempBuffer, 0, hopSize);
+            System.arraycopy(audioBuffer, 0, tempBuffer, hopSize, audioBuffer.length);
+            //save the carry-over for the next buffer
+            System.arraycopy(audioBuffer, audioBuffer.length - hopSize, carryOver, 0, hopSize);
+        }
+        else{
+            tempBuffer = new double[audioBuffer.length];
+            System.arraycopy(audioBuffer, 0, tempBuffer, 0, audioBuffer.length);
+            //save the carry-over for the next buffer
+            System.arraycopy(audioBuffer, audioBuffer.length - hopSize, carryOver, 0, hopSize);
+            carryAvailable  = true;
+
+        }
+
+        long tempTime = System.currentTimeMillis();
 
         double[] buffer = new double[fftLength];
         for(int i=0; i <= tempBuffer.length - fftLength; i+=hopSize){
             System.arraycopy(tempBuffer, i, buffer, 0, fftLength);
-            double valueForTimeStep = meanExtraction(AlgoHelper.fftMagnitude(buffer), carrierIdx, halfCarrierWidth);
+
+            double[] values = AlgoHelper.fftMagnitude(buffer, win, windowAmp);
+            double valueForTimeStep = meanExtraction(values, carrierIdx, halfCarrierWidth);
+
             processFeatureValue(valueForTimeStep);
         }
+        time += System.currentTimeMillis()-tempTime;
+        counter++;
+
 
 
     }
@@ -101,9 +135,15 @@ public class MeanBasedFD extends FeatureDetector{
                 meanWeights += values[i];
             }
         }
-        if(Math.abs(0.0 - meanWeights) > 1e-6)
+        if(Math.abs(0.0 - meanWeights) > 1e-6) {
             mean /= meanWeights;
+            mean -= carrierIdx;
+        }
 
         return mean;
+    }
+
+    public long getTime(){
+        return time/counter;
     }
 }

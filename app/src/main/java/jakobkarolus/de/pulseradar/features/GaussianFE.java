@@ -24,6 +24,7 @@ public class GaussianFE extends FeatureExtractor{
         double sigma = Math.sqrt(variance);
         double[] y = toArray(uF.getUnrefinedFeature());
         double[] x = getRange(0, uF.getUnrefinedFeature().size());
+        x = normpdf(x, mu, sigma);
         double innerProd1 = innerProduct(x, x) + 1e-6;
         double innerProd2 = innerProduct(x, y);
         double weight = (1.0/innerProd1)*innerProd2;
@@ -35,8 +36,8 @@ public class GaussianFE extends FeatureExtractor{
 
 
     private double[] getRange(int start, int end) {
-        double[] range = new double[end-1];
-        for(int i=0; i < end; i++)
+        double[] range = new double[end];
+        for(int i=start; i < end; i++)
             range[i] = i;
         return range;
     }

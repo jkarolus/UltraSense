@@ -14,21 +14,79 @@ import java.util.Arrays;
  */
 public class AlgoHelper {
 
+    //buttworth filter
+    private static double[] b = {0.010312874762664, -0.061877248575986,  0.154693121439966, -0.206257495253288, 0.154693121439966, -0.061877248575986,  0.010312874762664};
+    private static double[] a = {1.000000000000000,  1.187600680175615,  1.305213349288551,  0.674327525297999, .263469348280139,  0.051753033879642,  0.005022526595088};
 
-    public static double[] fftMagnitude(double[] x){
-        double[] win = getHannWindow(x.length);
+
+    public static void scaleToOne(double[] data) {
+        double max = Double.MIN_VALUE;
+        for(double d : data) {
+            if (d > max)
+                max = d;
+        }
+        for(int i=0; i < data.length; i++)
+            data[i] /= max;
+    }
+
+
+    public static void applyHighPassFilter(double[] data){
+
+        //http://dsp.stackexchange.com/questions/592/how-does-matlab-handle-iir-filters
+
+        double xmem1, xmem2, ymem1, ymem2, xmem3, xmem4, ymem3, ymem4, xmem5, xmem6, ymem5, ymem6;
+        xmem1 = xmem2 = ymem1 = ymem2 = xmem3 = xmem4 = ymem3 = ymem4 = xmem5 = xmem6 = ymem5 = ymem6 =0.0;
+
+
+        int p=0;
+
+        while(p < data.length){
+
+            double y = b[0]*data[p] + b[1]*xmem1 + b[2]*xmem2 + b[3]*xmem3 + b[4]*xmem4 + b[5]*xmem5 + b[6]*xmem6
+                    - a[1]*ymem1 - a[2]*ymem2 - a[3]*ymem3 - a[4]*ymem4 - a[5]*ymem5 - a[6]*ymem6;
+
+            if(Double.isNaN(y))
+                y = 0.0;
+
+            xmem6 = xmem5;
+            xmem5 = xmem4;
+            xmem4 = xmem3;
+            xmem3 = xmem2;
+            xmem2 = xmem1;
+            xmem1 = data[p];
+            ymem6 = ymem5;
+            ymem5 = ymem4;
+            ymem4 = ymem3;
+            ymem3 = ymem2;
+            ymem2 = ymem1;
+            ymem1 = y;
+
+            data[p] = y;
+
+            p++;
+        }
+
+    }
+
+
+    public static double[] fftMagnitude(double[] x, double[] win, double windowAmp){
         for(int i=0; i < x.length; i++)
-            x[i] *= win[i];
+            x[i] = x[i] * win[i];
 
         FastFourierTransformer trans = new FastFourierTransformer(DftNormalization.STANDARD);
         Complex[] result = trans.transform(x, TransformType.FORWARD);
         double[] magnitudeColumn = new double[x.length/2+1];
-        for(int i=0; i < (x.length/2+1); i++){
+        int rown = (x.length/2+1);
+        for(int i=0; i < rown; i++){
             double magnitude = result[i].getReal()*result[i].getReal() + result[i].getImaginary()*result[i].getImaginary();
             //adjust for window ampflication
-            magnitude /= x.length;
-            magnitude /= sumWindowNorm(win);
+            //magnitude = result[i].abs();
+            magnitude = Math.sqrt(magnitude);
+            magnitude = (magnitude/((double) x.length))/windowAmp;
+            //magnitude /= windowAmp;
             //TODO adjust for nycquist or DC component necessary?
+            if(!(i==0 || i==(rown-1)))
+                magnitude *=2;
 
             //log scale
             magnitude = 20*Math.log10(magnitude+1e-6);
@@ -39,7 +97,7 @@ public class AlgoHelper {
 
     }
 
-    private static double sumWindowNorm(double[] win) {
+    public static double sumWindowNorm(double[] win) {
         double sum=0.0;
         for(int i=0; i < win.length; i++)
             sum+= win[i];

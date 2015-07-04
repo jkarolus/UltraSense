@@ -20,7 +20,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
+import jakobkarolus.de.pulseradar.features.FeatureDetector;
+import jakobkarolus.de.pulseradar.features.GaussianFE;
+import jakobkarolus.de.pulseradar.features.MeanBasedFD;
+import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -28,6 +33,7 @@ import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 public class AudioManager{
 
     private Context ctx;
+    private PulseRadarFragment thiz;
     private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
 
     private static final int SAMPLE_RATE = 44100;
@@ -45,12 +51,15 @@ public class AudioManager{
     private boolean recordRunning = false;
     private double currentFreq;
 
+    private FeatureDetector featureDetector;
+
     //force a multiple of 4096
     private static final int minSize = 4*4096;//AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
 
-    public AudioManager(Context ctx){
+    public AudioManager(Context ctx, PulseRadarFragment thiz){
         this.ctx = ctx;
+        this.thiz = thiz;
         new File(fileDir).mkdirs();
         currentFreq = STD_FREQ;
     }
@@ -65,6 +74,10 @@ public class AudioManager{
 
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
+
+        featureDetector = new MeanBasedFD(4096, 2048, 1858, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        //TODO: fix reference
+        featureDetector.registerFeatureExtractor(new GaussianFE(thiz));
 
         tempFileRec = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_rec.raw");
         tempFileSend = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_send.raw");
@@ -88,6 +101,7 @@ public class AudioManager{
                 short[] buffer = new short[minSize];
                 while(recordRunning){
                     ar.read(buffer, 0, minSize);
+                    featureDetector.checkForFeatures(convertToDoubles(buffer));
                     writeShortBufferToStream(buffer, dosRec);
                 }
 
