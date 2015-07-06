@@ -1,5 +1,7 @@
 package jakobkarolus.de.pulseradar.features;
 
+import android.util.Log;
+
 import java.util.List;
 
 /**
@@ -13,32 +15,58 @@ public class GaussianFE extends FeatureExtractor{
     }
 
     @Override
-    public void onFeatureDetected(UnrefinedFeature uF) {
+    public void onHighFeatureDetected(UnrefinedFeature uF) {
 
-        double mu = (double) (uF.getUnrefinedFeature().size()-1)/2.0;
+        GaussianFeature gf = fitGaussian(uF);
+        if(gf != null)
+            getFeatProc().processFeature(fitGaussian(uF));
+
+    }
+
+    private GaussianFeature fitGaussian(UnrefinedFeature uF){
+
+        if(uF.getEndTime() -uF.getStartTime() <= 0)
+            return null;
+
+        double[] y = toArray(uF.getUnrefinedFeature());
+
+        double[] x = getRange(uF.getStartTime(), uF.getEndTime());
+        double mu = (x[x.length-1] + x[0]) / 2.0;
+
         double variance = 0.0;
-        for(Double d: uF.getUnrefinedFeature()){
+        for(double d: x){
             variance += ((d-mu)*(d-mu));
         }
         variance /= uF.getUnrefinedFeature().size();
         double sigma = Math.sqrt(variance);
-        double[] y = toArray(uF.getUnrefinedFeature());
-        double[] x = getRange(0, uF.getUnrefinedFeature().size());
+
         x = normpdf(x, mu, sigma);
         double innerProd1 = innerProduct(x, x) + 1e-6;
         double innerProd2 = innerProduct(x, y);
         double weight = (1.0/innerProd1)*innerProd2;
 
-        GaussianFeature gf = new GaussianFeature(mu, sigma, weight);
-        getFeatProc().processFeature(gf);
+        if(Double.isNaN(weight)){
+            Log.e("GFE", "NaN");
+        }
+
+        return new GaussianFeature(mu, sigma, weight);
+    }
+
+    @Override
+    public void onLowFeatureDetected(UnrefinedFeature uF) {
+
+        GaussianFeature gf = fitGaussian(uF);
+        if(gf != null)
+            getFeatProc().processFeature(new GaussianFeature(gf.getMu(), gf.getSigma(), gf.getWeight()*(-1)));
 
     }
 
 
-    private double[] getRange(int start, int end) {
-        double[] range = new double[end];
-        for(int i=start; i < end; i++)
-            range[i] = i;
+    private double[] getRange(long start, long end) {
+        int length = (int) (end-start+1);
+        double[] range = new double[length];
+        for(int i=0; i < length; i++)
+            range[i] = (double) start+i;
         return range;
     }
 

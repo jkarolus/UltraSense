@@ -9,25 +9,34 @@ import java.util.Vector;
 public abstract class FeatureDetector {
 
     private List<FeatureExtractor> featExtractors;
-    private UnrefinedFeature currentFeature;
+    private UnrefinedFeature currentHighFeature;
+    private UnrefinedFeature currentLowFeature;
 
 
     public FeatureDetector(){
         this.featExtractors = new Vector<>();
-        this.currentFeature = new UnrefinedFeature();
+        this.currentHighFeature = new UnrefinedFeature();
+        this.currentLowFeature = new UnrefinedFeature();
     }
 
 
     public abstract void checkForFeatures(double[] audioBuffer);
 
-    public void notifyFeatureDetected(){
+    public void notifyFeatureDetectedHigh(){
         for(FeatureExtractor fe : this.featExtractors)
-            fe.onFeatureDetected(new UnrefinedFeature(currentFeature.getUnrefinedFeature()));
+            fe.onHighFeatureDetected(new UnrefinedFeature(currentHighFeature));
 
-        this.currentFeature = new UnrefinedFeature();
+        this.currentHighFeature = new UnrefinedFeature();
     }
 
-    public void registerFeatureExtractor(FeatureExtractor featureExtractor){
+    public void notifyFeatureDetectedLow(){
+        for(FeatureExtractor fe : this.featExtractors)
+            fe.onLowFeatureDetected(new UnrefinedFeature(currentLowFeature));
+
+        this.currentLowFeature = new UnrefinedFeature();
+    }
+
+        public void registerFeatureExtractor(FeatureExtractor featureExtractor){
         this.featExtractors.add(featureExtractor);
     }
 
@@ -39,11 +48,11 @@ public abstract class FeatureDetector {
         this.featExtractors.clear();
     }
 
-    public UnrefinedFeature getCurrentFeature() {
-        return currentFeature;
+    public UnrefinedFeature getCurrentHighFeature() {
+        return currentHighFeature;
     }
 
-    public void setCurrentFeature(UnrefinedFeature currentFeature) {
-        this.currentFeature = currentFeature;
+    public UnrefinedFeature getCurrentLowFeature() {
+        return currentLowFeature;
     }
 }

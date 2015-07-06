@@ -11,7 +11,10 @@ public abstract class FeatureExtractor {
         this.featProc = featProc;
     }
 
-    public abstract void onFeatureDetected(UnrefinedFeature uF);
+    public abstract void onHighFeatureDetected(UnrefinedFeature uF);
+
+    public abstract void onLowFeatureDetected(UnrefinedFeature uF);
+
 
     public FeatureProcessor getFeatProc() {
         return featProc;

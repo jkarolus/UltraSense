@@ -13,6 +13,9 @@ public class UnrefinedFeature {
     //per time-step list of extracted frequency values
     private List<Double> unrefinedFeature;
 
+    private long startTime;
+    private long endTime;
+
     private boolean hasStarted;
 
     public UnrefinedFeature(){
@@ -20,10 +23,12 @@ public class UnrefinedFeature {
         this.hasStarted = false;
     }
 
-    public UnrefinedFeature(List<Double> unrefinedFeature){
+    public UnrefinedFeature(UnrefinedFeature current){
         this.unrefinedFeature =  new Vector<>();
-        this.unrefinedFeature.addAll(unrefinedFeature);
-        this.hasStarted = false;
+        this.unrefinedFeature.addAll(current.getUnrefinedFeature());
+        this.hasStarted = current.hasStarted();
+        this.startTime = current.getStartTime();
+        this.endTime = current.getEndTime();
     }
 
     public void addTimeStep(double value){
@@ -53,5 +58,21 @@ public class UnrefinedFeature {
 
     public List<Double> getUnrefinedFeature() {
         return unrefinedFeature;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
     }
 }

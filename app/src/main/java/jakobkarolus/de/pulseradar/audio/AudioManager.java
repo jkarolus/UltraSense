@@ -75,7 +75,8 @@ public class AudioManager{
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
         ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
 
-        featureDetector = new MeanBasedFD(4096, 2048, 1858, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        double carrierIdx = ((20000.0/22050.0)*2049)-1;
+        featureDetector = new MeanBasedFD(4096, 2048, carrierIdx, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
         //TODO: fix reference
         featureDetector.registerFeatureExtractor(new GaussianFE(thiz));
 
@@ -95,14 +96,27 @@ public class AudioManager{
         final byte[] audio =  signalGen.generateAudio();
 
         Thread recordThread = new Thread(new Runnable() {
+
+            private int sampleCounter;
             @Override
             public void run() {
 
                 short[] buffer = new short[minSize];
                 while(recordRunning){
-                    ar.read(buffer, 0, minSize);
-                    featureDetector.checkForFeatures(convertToDoubles(buffer));
+                    int samplesRead = ar.read(buffer, 0, minSize);
                     writeShortBufferToStream(buffer, dosRec);
+
+                    double[] bufferDouble = new double[minSize];
+                    for(int i=0; i < minSize && i < samplesRead; i++){
+                        bufferDouble[i] = (double) buffer[i] / 32768.0;
+                    }
+
+                    sampleCounter+=samplesRead;
+                    //omit first second
+
+                    if(sampleCounter >= 44100) {
+                        featureDetector.checkForFeatures(bufferDouble);
+                    }
                 }
 
                 try {
@@ -135,6 +149,30 @@ public class AudioManager{
 
     }
 
+    /*
+    private double[] convertToDouble(byte[] buffer) {
+
+
+        double[] bufferDouble = new double[buffer.length/2];
+        final int bytesPerSample = 2; // As it is 16bit PCM
+        final double amplification = 1.0; // choose a number as you like
+        for (int index = 0, floatIndex = 0; index < bytesRecorded - bytesPerSample + 1; index += bytesPerSample, floatIndex++) {
+            double sample = 0;
+            for (int b = 0; b < bytesPerSample; b++) {
+                int v = bufferData[index + b];
+                if (b < bytesPerSample - 1 || bytesPerSample == 1) {
+                    v &= 0xFF;
+                }
+                sample += v << (b * 8);
+            }
+            double sample32 = amplification * (sample / 32768.0);
+            micBufferData[floatIndex] = sample32;
+        }
+
+
+
+    }
+*/
 
     private void writeByteBufferToStream(byte[] buffer, DataOutputStream dos){
 

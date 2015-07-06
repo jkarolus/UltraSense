@@ -12,8 +12,8 @@ public class MeanBasedFD extends FeatureDetector{
 
     private int fftLength;
     private int hopSize;
-    private int carrierIdx;
-    private double halfCarrierWidth;
+    private double carrierIdx;
+    private int halfCarrierWidth;
     private double magnitudeThreshold;
     private double featHighThreshold;
     private double featLowThreshold;
@@ -24,8 +24,9 @@ public class MeanBasedFD extends FeatureDetector{
 
     private double[] carryOver;
     private boolean carryAvailable;
+    private long timeStep;
 
-    public MeanBasedFD(int fftLength, int hopSize, int carrierIdx, double halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
+    public MeanBasedFD(int fftLength, int hopSize, double carrierIdx, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
         super();
         this.fftLength = fftLength;
         this.hopSize = hopSize;
@@ -42,12 +43,12 @@ public class MeanBasedFD extends FeatureDetector{
 
         //instantiate new FD every time recording starts to reset carry
         this.carryAvailable = false;
+        this.timeStep = 0;
     }
 
     @Override
     public void checkForFeatures(double[] audioBuffer) {
 
-        //TODO: refine the signal -> filter and scaleToOne
         AlgoHelper.scaleToOne(audioBuffer);
         AlgoHelper.applyHighPassFilter(audioBuffer);
 
@@ -75,10 +76,13 @@ public class MeanBasedFD extends FeatureDetector{
         for(int i=0; i <= tempBuffer.length - fftLength; i+=hopSize){
             System.arraycopy(tempBuffer, i, buffer, 0, fftLength);
 
+            timeStep++;
             double[] values = AlgoHelper.fftMagnitude(buffer, win, windowAmp);
-            double valueForTimeStep = meanExtraction(values, carrierIdx, halfCarrierWidth);
+            double[] valueForTimeStep = meanExtraction(values, carrierIdx, halfCarrierWidth);
 
-            processFeatureValue(valueForTimeStep);
+            processFeatureValue(getCurrentHighFeature(), valueForTimeStep[0], true);
+            processFeatureValue(getCurrentLowFeature(), valueForTimeStep[1], false);
+
         }
         time += System.currentTimeMillis()-tempTime;
         counter++;
@@ -87,60 +91,87 @@ public class MeanBasedFD extends FeatureDetector{
 
     }
 
-    private void processFeatureValue(double valueForTimeStep) {
+    private void processFeatureValue(UnrefinedFeature uF, double valueForTimeStep, boolean isHighDoppler) {
         if(valueForTimeStep >= featHighThreshold){
-            if(!getCurrentFeature().hasStarted()){
+            if(!uF.hasStarted()){
                 //start a new feature
-                getCurrentFeature().setHasStarted(true);
+                uF.setHasStarted(true);
+                uF.setStartTime(timeStep);
                 currentSlack = 0;
-                getCurrentFeature().addTimeStep(valueForTimeStep);
+                uF.addTimeStep(valueForTimeStep);
             }
             else{
                 //reset slack
                 currentSlack = 0;
-                getCurrentFeature().addTimeStep(valueForTimeStep);
+                uF.addTimeStep(valueForTimeStep);
             }
         }
         else{
-            if(getCurrentFeature().hasStarted()){
+            if(uF.hasStarted()){
                 //is it also below the low threshold
                 if(valueForTimeStep < featLowThreshold){
                     //check for slack
                     if(currentSlack < featSlackWidth){
                         //ignore this one and go on
                         currentSlack++;
-                        getCurrentFeature().addTimeStep(valueForTimeStep);
+                        uF.addTimeStep(valueForTimeStep);
                     }
                     else{
                         //if it below low_threshold and no slack left -> finish it
                         //these means we have used all our slack to no avail -> remove them to get the correct feature size
-                        if(getCurrentFeature().removeSlackedSteps(featSlackWidth))
-                            notifyFeatureDetected();
+                        if(uF.removeSlackedSteps(featSlackWidth)) {
+                            uF.setHasStarted(false);
+                            uF.setEndTime(timeStep - 1);
+                            if(isHighDoppler)
+                                notifyFeatureDetectedHigh();
+                            else
+                                notifyFeatureDetectedLow();
+                        }
                     }
                 }
                 else{
                     //below threshold is fine for already started features
-                    getCurrentFeature().addTimeStep(valueForTimeStep);
+                    uF.addTimeStep(valueForTimeStep);
                 }
             }
         }
     }
 
-    private double meanExtraction(double[] values, int carrierIdx, double halfCarrierWidth) {
-        double meanWeights = 0.0;
-        double mean = 0.0;
-        for(int i=carrierIdx + (int) Math.ceil(halfCarrierWidth); i < values.length; i++){
-            if(values[i] > magnitudeThreshold){
-                mean += i*values[i];
-                meanWeights += values[i];
+    private double[] meanExtraction(double[] values, double carrierIdx, int halfCarrierWidth) {
+        double[] means = new double[2];
+
+        //high doppler
+        double meanWeightsHigh = 0.0;
+        double meanHigh = 0.0;
+        int offset = (int) Math.ceil(carrierIdx) + halfCarrierWidth;
+        for(int i=0; i < (values.length - offset); i++){
+            if(values[offset + i] > magnitudeThreshold){
+                meanHigh += (i+1)*values[offset + i];
+                meanWeightsHigh += values[offset + i];
             }
         }
-        if(Math.abs(0.0 - meanWeights) > 1e-6) {
-            mean /= meanWeights;
-            mean -= carrierIdx;
+        if(Math.abs(0.0 - meanWeightsHigh) > 1e-6) {
+            meanHigh /= meanWeightsHigh;
+        }
+        //low doppler
+        double meanWeightsLow = 0.0;
+        double meanLow = 0.0;
+        offset = (int) Math.floor(carrierIdx) - halfCarrierWidth;
+        for(int i=0; i <= offset; i++){
+            if(values[offset - i] > magnitudeThreshold){
+                meanLow += (i+1)*values[offset - i];
+                meanWeightsLow += values[offset - i];
+            }
+        }
+        if(Math.abs(0.0 - meanWeightsLow) > 1e-6) {
+            meanLow /= meanWeightsLow;
         }
 
-        return mean;
+        means[0] = meanHigh;
+        means[1] = meanLow;
+
+        return means;
+
     }
 
     public long getTime(){
