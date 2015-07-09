@@ -20,12 +20,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.features.FeatureDetector;
-import jakobkarolus.de.pulseradar.features.GaussianFE;
-import jakobkarolus.de.pulseradar.features.MeanBasedFD;
-import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -33,7 +29,6 @@ import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 public class AudioManager{
 
     private Context ctx;
-    private PulseRadarFragment thiz;
     private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
 
     private static final int SAMPLE_RATE = 44100;
@@ -57,9 +52,8 @@ public class AudioManager{
     private static final int minSize = 4*4096;//AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
 
-    public AudioManager(Context ctx, PulseRadarFragment thiz){
+    public AudioManager(Context ctx){
         this.ctx = ctx;
-        this.thiz = thiz;
         new File(fileDir).mkdirs();
         currentFreq = STD_FREQ;
     }
@@ -73,12 +67,7 @@ public class AudioManager{
     public void startRecord() throws FileNotFoundException {
 
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
-        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10* minSize);
-
-        double carrierIdx = ((20000.0/22050.0)*2049)-1;
-        featureDetector = new MeanBasedFD(4096, 2048, carrierIdx, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
-        //TODO: fix reference
-        featureDetector.registerFeatureExtractor(new GaussianFE(thiz));
+        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 2*minSize); //audio is read in shorts = byte*2
 
         tempFileRec = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_rec.raw");
         tempFileSend = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_send.raw");
@@ -106,16 +95,45 @@ public class AudioManager{
                     int samplesRead = ar.read(buffer, 0, minSize);
                     writeShortBufferToStream(buffer, dosRec);
 
-                    double[] bufferDouble = new double[minSize];
+                    /*
+                    ByteBuffer bytes = ByteBuffer.allocate(buffer.length);
+                    for(int i=0; i < buffer.length; i+=2) {
+                        byte byte1 = buffer[i];
+                        byte byte2 = buffer[i + 1];
+                        short newshort = (short) ((byte2 << 8) + (byte1 & 0xFF));
+                        bytes.putShort(newshort);
+                    }
+
+                    short[] bufferShort = new short[buffer.length/2];
+                    bytes.rewind();
+                    for(int i=0; i < bufferShort.length; i++){
+                        bufferShort[i] = bytes.getShort();
+                    }
+
+
+                    double[] bufferDouble = new double[bytes.capacity()/8];
+                    bytes.rewind();
+                    int i=0;
+                    while(bytes.hasRemaining()){
+                        bufferDouble[i] = bytes.getDouble();
+                        i++;
+                    }
+
+                   // double[] bufferDouble = bytes.asDoubleBuffer().array();;
+                    */
+
+                    double[] bufferDouble = new double[buffer.length];
                     for(int i=0; i < minSize && i < samplesRead; i++){
                         bufferDouble[i] = (double) buffer[i] / 32768.0;
                     }
+
 
                     sampleCounter+=samplesRead;
                     //omit first second
 
                     if(sampleCounter >= 44100) {
-                        featureDetector.checkForFeatures(bufferDouble);
+                        if(featureDetector != null)
+                            featureDetector.checkForFeatures(bufferDouble);
                     }
                 }
 
@@ -403,5 +421,9 @@ public class AudioManager{
 
     public void setSignalGenerator(SignalGenerator signalGenerator) {
         this.signalGen = signalGenerator;
+    }
+
+    public void setFeatureDetector(FeatureDetector featureDetector){
+        this.featureDetector = featureDetector;
     }
 }

@@ -1,14 +1,22 @@
 package jakobkarolus.de.pulseradar.features;
 
+import android.util.Log;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
+import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
+ * FeatureDetector using a mean-based scheme per timestep to detect Features.<br>
+ * Implements a STFT to get the power of frequency value per timestep
+ *
+ * <br><br>
  * Created by Jakob on 02.07.2015.
  */
 public class MeanBasedFD extends FeatureDetector{
-
-    private long time=0;
-    private long counter=0;
 
     private int fftLength;
     private int hopSize;
@@ -26,11 +34,11 @@ public class MeanBasedFD extends FeatureDetector{
     private boolean carryAvailable;
     private long timeStep;
 
-    public MeanBasedFD(int fftLength, int hopSize, double carrierIdx, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
+    public MeanBasedFD(int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
         super();
         this.fftLength = fftLength;
         this.hopSize = hopSize;
-        this.carrierIdx = carrierIdx;
+        this.carrierIdx = ((carrierFrequency/22050.0)*(fftLength/2+1))-1;
         this.halfCarrierWidth = halfCarrierWidth;
         this.magnitudeThreshold = magnitudeThreshold;
         this.featHighThreshold = featHighThreshold;
@@ -49,7 +57,7 @@ public class MeanBasedFD extends FeatureDetector{
     @Override
     public void checkForFeatures(double[] audioBuffer) {
 
-        AlgoHelper.scaleToOne(audioBuffer);
+        //AlgoHelper.scaleToOne(audioBuffer);
         AlgoHelper.applyHighPassFilter(audioBuffer);
 
         double[] tempBuffer;
@@ -68,9 +76,33 @@ public class MeanBasedFD extends FeatureDetector{
             System.arraycopy(audioBuffer, audioBuffer.length - hopSize, carryOver, 0, hopSize);
             carryAvailable  = true;
 
-        }
 
-        long tempTime = System.currentTimeMillis();
+            final double[] bufferData = new double[tempBuffer.length];
+            System.arraycopy(tempBuffer, 0, bufferData, 0, tempBuffer.length);
+
+
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Log.e("WRITER", "start writing");
+                        FileWriter writer = new FileWriter(new File(PulseRadarFragment.fileDir + "data.txt"));
+                        for(double d : bufferData)
+                            writer.write(d + ",");
+                        writer.flush();
+                        writer.close();
+                        Log.e("WRITER", "finished writing");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            thread.start();
+
+
+
+        }
 
         double[] buffer = new double[fftLength];
         for(int i=0; i <= tempBuffer.length - fftLength; i+=hopSize){
@@ -84,8 +116,6 @@ public class MeanBasedFD extends FeatureDetector{
             processFeatureValue(getCurrentLowFeature(), valueForTimeStep[1], false);
 
         }
-        time += System.currentTimeMillis()-tempTime;
-        counter++;
 
 
 
@@ -172,9 +202,5 @@ public class MeanBasedFD extends FeatureDetector{
 
         return means;
 
-    }
-
-    public long getTime(){
-        return time/counter;
     }
 }

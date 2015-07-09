@@ -54,4 +54,9 @@ public class CWSignalGenerator implements SignalGenerator{
 
         return byteBuffer;
     }
+
+    @Override
+    public double getCarrierFrequency() {
+        return freq;
+    }
 }

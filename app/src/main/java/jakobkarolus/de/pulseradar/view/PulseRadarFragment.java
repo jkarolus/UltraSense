@@ -17,7 +17,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -42,21 +41,21 @@ import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 import jakobkarolus.de.pulseradar.audio.AudioManager;
-import jakobkarolus.de.pulseradar.features.Feature;
 import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
-import jakobkarolus.de.pulseradar.features.GaussianFeature;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
+import jakobkarolus.de.pulseradar.features.gestures.DownGE;
+import jakobkarolus.de.pulseradar.features.gestures.UpGE;
 
 /**
  * Created by Jakob on 25.05.2015.
  */
-public class PulseRadarFragment extends Fragment implements FeatureProcessor{
+public class PulseRadarFragment extends Fragment{
 
     private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
     private Bitmap lastSpectrogram;
-    private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
+    public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
 
 
     private AudioManager audioManager;
@@ -73,22 +72,14 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
 
     private AudioTrack at;
 
-    private String prefMode;
-
-    private FileWriter featWriter;
+    private FeatureProcessor featureProcessor;
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        audioManager = new AudioManager(getActivity(), this);
+        audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
-        //TODO: read from preferences
-        double carrierIdx = ((20000.0/22050.0)*2049)-1;
-        featureDetector = new MeanBasedFD(4096, 2048, carrierIdx, 4, -50, 3, 2, 0, AlgoHelper.getHannWindow(4096));
-        featureDetector.registerFeatureExtractor(new GaussianFE(this));
-
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,44100, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT),AudioTrack.MODE_STREAM);
     }
 
@@ -191,10 +182,11 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
             try {
 
                 //save it for comparison -> the features
-                featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
+                //featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
+                featureProcessor.startFeatureWriter();
 
                 List<Double> dataList = new Vector<>();
-                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "test_data_up_down.bin"));
+                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "test3_rec.bin"));
                 boolean notEnded = true;
 
                 publishProgress(new String[]{"Reading values"});
@@ -222,23 +214,17 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
             }
         }, 1000, 250);
         */
-                long time = 0;
-                int counter = 0;
+
 
                 publishProgress(new String[]{"Calculating features"});
                 int length = 4 * 4096;
                 double[] buffer = new double[length];
                 for (int i = 0; i <= data.length - length; i += length) {
                     System.arraycopy(data, i, buffer, 0, length);
-                    long tempTime = System.currentTimeMillis();
                     featureDetector.checkForFeatures(buffer);
-                    time += System.currentTimeMillis()-tempTime;
-                    counter++;
                 }
-                featWriter.close();
-                time /= counter;
-                Log.e("TIME", "" + time);
-                Log.e("TIME_FFT", "" + ((MeanBasedFD) featureDetector).getTime());
+                //featWriter.close();
+                featureProcessor.closeFeatureWriter();
 
             }
             catch(IOException e){
@@ -255,55 +241,6 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
         }
         else{
             Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
-        }
-
-    }
-
-    @Override
-    public void processFeature(Feature feature) {
-
-
-        try {
-
-            //TODO: implement more elaborate version
-            if (feature instanceof GaussianFeature) {
-                GaussianFeature gf = (GaussianFeature) feature;
-
-                featWriter.write(gf.getMu() + ",\t" + gf.getSigma() + ",\t" + gf.getWeight() + "\n");
-
-                if (gf.getWeight() >= 60.0) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getActivity(), "DOWN", Toast.LENGTH_SHORT).show();
-                            Log.e("GESTURE", "DOWN");
-                            //FMCWSignalGenerator signalGen = new FMCWSignalGenerator(300, 600, 0.5, 1, 44100, 1.0f, true);
-                            //byte[] buffer = signalGen.generateAudio();
-                            //at.write(buffer, 0, buffer.length);
-                        }
-                    });
-
-                }
-                else if (gf.getWeight() <= -60.0) {
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getActivity(), "UP", Toast.LENGTH_SHORT).show();
-                            Log.e("GESTURE", "UP");
-                            //FMCWSignalGenerator signalGen = new FMCWSignalGenerator(600, 300, 0.5, 1, 44100, 1.0f, true);
-                            //byte[] buffer = signalGen.generateAudio();
-                            //at.write(buffer, 0, buffer.length);
-                        }
-                    });
-
-
-                }
-
-
-            }
-        }
-        catch (IOException e){
-            e.printStackTrace();
         }
 
     }
@@ -375,7 +312,8 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
     private void startRecord() throws IOException {
 
         //save it for comparison -> the features
-        featWriter = new FileWriter(new File(fileDir + "feat.txt"));
+        if(featureProcessor != null)
+            featureProcessor.startFeatureWriter();
 
         startButton.setEnabled(false);
         startButton.setText("Recording...");
@@ -387,9 +325,8 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
     private void stopRecord() throws IOException {
 
         //save it for comparison -> the features
-        if(featWriter != null) {
-            featWriter.flush();
-            featWriter.close();
+        if(featureProcessor != null) {
+            featureProcessor.closeFeatureWriter();
         }
 
         startButton.setEnabled(true);
@@ -413,7 +350,16 @@ public class PulseRadarFragment extends Fragment implements FeatureProcessor{
     @Override
     public void onResume() {
         super.onResume();
-        audioManager.setSignalGenerator(getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity())));
+        SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
+        audioManager.setSignalGenerator(signalGen);
+        //TODO: read parameters from preferences
+        featureDetector = new MeanBasedFD(4096, 2048, signalGen.getCarrierFrequency(), 4, -60, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        featureProcessor = new FeatureProcessor(getActivity());
+        featureProcessor.registerGestureExtractor(new DownGE());
+        featureProcessor.registerGestureExtractor(new UpGE());
+        featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
+        audioManager.setFeatureDetector(featureDetector);
+
     }
 
     private SignalGenerator getSignalGeneratorForMode(SharedPreferences sharedPreferences) {

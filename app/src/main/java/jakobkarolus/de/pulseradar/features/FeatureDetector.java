@@ -4,11 +4,19 @@ import java.util.List;
 import java.util.Vector;
 
 /**
+ * Each FeatureDetector processing the current audio stream and notifies its listener when it detects a Feature.<br>
+ * Detection is separated for high and low doppler shifts as is their notification.
+ *
+ * <br><br>
  * Created by Jakob on 02.07.2015.
  */
 public abstract class FeatureDetector {
 
     private List<FeatureExtractor> featExtractors;
+
+    /**
+     * the cumulating current features for each high and low doppler
+     */
     private UnrefinedFeature currentHighFeature;
     private UnrefinedFeature currentLowFeature;
 
@@ -20,7 +28,13 @@ public abstract class FeatureDetector {
     }
 
 
+    /**
+     * process the audioBuffer and detect features. Call notify... upon detection
+     *
+     * @param audioBuffer
+     */
     public abstract void checkForFeatures(double[] audioBuffer);
+
 
     public void notifyFeatureDetectedHigh(){
         for(FeatureExtractor fe : this.featExtractors)

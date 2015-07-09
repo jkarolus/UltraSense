@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Vector;
 
 /**
+ * Datamodel for each FeatureDetector to keep track of the current "Feature state".<br>
  * Keeps track of frequency values given time-steps.<br>
- * Used by FeatureDetectors to incremently build up a complete UnrefinedFeature
+ *
+ * <br><br>
  * Created by Jakob on 02.07.2015.
  */
 public class UnrefinedFeature {
@@ -18,11 +20,18 @@ public class UnrefinedFeature {
 
     private boolean hasStarted;
 
+    /**
+     * initiate a new UnrefinedFeature
+     */
     public UnrefinedFeature(){
         this.unrefinedFeature =  new Vector<>();
         this.hasStarted = false;
     }
 
+    /**
+     * copy constructor
+     * @param current
+     */
     public UnrefinedFeature(UnrefinedFeature current){
         this.unrefinedFeature =  new Vector<>();
         this.unrefinedFeature.addAll(current.getUnrefinedFeature());
@@ -31,14 +40,21 @@ public class UnrefinedFeature {
         this.endTime = current.getEndTime();
     }
 
+    /**
+     * adds value for a single timestep to the UnrefinedFeature
+     * @param value the value to add
+     */
     public void addTimeStep(double value){
         this.unrefinedFeature.add(value);
     }
 
-    public void addTimeSteps(List<Double> values){
-        this.unrefinedFeature.addAll(values);
-    }
-
+    /**
+     * If working with slack steps, this method will remove any unnecessary slacks.
+     * This can happen if slack is used but the feature ended nonetheless
+     *
+     * @param slackWidth
+     * @return whether this feature contains any value after reduction, in other words: if it is valid
+     */
     public boolean removeSlackedSteps(int slackWidth){
         for(int i=0; i < slackWidth; i++){
             int idx = this.unrefinedFeature.size()-1;
@@ -48,10 +64,18 @@ public class UnrefinedFeature {
         return !this.unrefinedFeature.isEmpty();
     }
 
+    /**
+     *
+     * @return whether a UnrefinedFeature was started
+     */
     public boolean hasStarted() {
         return hasStarted;
     }
 
+    /**
+     * change the state of an UnrefinedFeature
+     * @param hasStarted the state to set
+     */
     public void setHasStarted(boolean hasStarted) {
         this.hasStarted = hasStarted;
     }

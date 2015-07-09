@@ -11,4 +11,11 @@ public interface SignalGenerator {
      * @return audio signal as byte[]
      */
     public byte[] generateAudio();
+
+    /**
+     *
+     *
+     * @return the carrier frequency for the generated signal
+     */
+    public double getCarrierFrequency();
 }

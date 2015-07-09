@@ -68,4 +68,9 @@ public class FMCWSignalGenerator implements SignalGenerator{
         return byteBuffer;
 
     }
+
+    @Override
+    public double getCarrierFrequency() {
+        return bottomFreq;
+    }
 }

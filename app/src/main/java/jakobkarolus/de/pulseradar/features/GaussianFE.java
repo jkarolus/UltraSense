@@ -5,6 +5,9 @@ import android.util.Log;
 import java.util.List;
 
 /**
+ * A FeatureExtractor implementing linear least-square approx using a Gaussian curve
+ *
+ * <br><br>
  * Created by Jakob on 02.07.2015.
  */
 public class GaussianFE extends FeatureExtractor{
@@ -19,7 +22,7 @@ public class GaussianFE extends FeatureExtractor{
 
         GaussianFeature gf = fitGaussian(uF);
         if(gf != null)
-            getFeatProc().processFeature(fitGaussian(uF));
+            getFeatProcessor().processFeature(fitGaussian(uF));
 
     }
 
@@ -57,7 +60,7 @@ public class GaussianFE extends FeatureExtractor{
 
         GaussianFeature gf = fitGaussian(uF);
         if(gf != null)
-            getFeatProc().processFeature(new GaussianFeature(gf.getMu(), gf.getSigma(), gf.getWeight()*(-1)));
+            getFeatProcessor().processFeature(new GaussianFeature(gf.getTime(), gf.getLength(), gf.getWeight()*(-1)));
 
     }
 

@@ -1,6 +1,8 @@
 package jakobkarolus.de.pulseradar.features;
 
 /**
+ * Feature represented by a Gaussian curve
+ *<br><br>
  * Created by Jakob on 02.07.2015.
  */
 public class GaussianFeature implements Feature{
@@ -16,16 +18,19 @@ public class GaussianFeature implements Feature{
         this.weight = weight;
     }
 
-
-    public double getMu() {
-        return mu;
-    }
-
-    public double getSigma() {
+    @Override
+    public double getLength() {
         return sigma;
     }
 
+    @Override
+    public double getTime() {
+        return mu;
+    }
+
+    @Override
     public double getWeight() {
         return weight;
     }
+
 }
