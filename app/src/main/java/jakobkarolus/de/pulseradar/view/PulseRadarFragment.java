@@ -45,8 +45,8 @@ import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
-import jakobkarolus.de.pulseradar.features.gestures.DownGE;
-import jakobkarolus.de.pulseradar.features.gestures.UpGE;
+import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
+import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -203,19 +203,6 @@ public class PulseRadarFragment extends Fragment{
                 for (int i = 0; i < data.length; i++)
                     data[i] = dataList.get(i);
 
-        /*
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-
-            private int counter=0;
-            @Override
-            public void run() {
-                //TODO: call featureDetector for every 4x4096 samples
-            }
-        }, 1000, 250);
-        */
-
-
                 publishProgress(new String[]{"Calculating features"});
                 int length = 4 * 4096;
                 double[] buffer = new double[length];
@@ -355,8 +342,10 @@ public class PulseRadarFragment extends Fragment{
         //TODO: read parameters from preferences
         featureDetector = new MeanBasedFD(4096, 2048, signalGen.getCarrierFrequency(), 4, -60, 3, 2, 0, AlgoHelper.getHannWindow(4096));
         featureProcessor = new FeatureProcessor(getActivity());
-        featureProcessor.registerGestureExtractor(new DownGE());
-        featureProcessor.registerGestureExtractor(new UpGE());
+        //featureProcessor.registerGestureExtractor(new DownGE());
+        //featureProcessor.registerGestureExtractor(new UpGE());
+        featureProcessor.registerGestureExtractor(new DownUpGE());
+        featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
 

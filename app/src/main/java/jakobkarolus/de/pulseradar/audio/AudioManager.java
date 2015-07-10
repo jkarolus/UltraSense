@@ -48,6 +48,8 @@ public class AudioManager{
 
     private FeatureDetector featureDetector;
 
+    private boolean once;
+
     //force a multiple of 4096
     private static final int minSize = 4*4096;//AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
 
@@ -56,6 +58,7 @@ public class AudioManager{
         this.ctx = ctx;
         new File(fileDir).mkdirs();
         currentFreq = STD_FREQ;
+        once = false;
     }
 
     /**
@@ -67,7 +70,7 @@ public class AudioManager{
     public void startRecord() throws FileNotFoundException {
 
         at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
-        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 2*minSize); //audio is read in shorts = byte*2
+        ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10*minSize);
 
         tempFileRec = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_rec.raw");
         tempFileSend = new File(ctx.getExternalCacheDir().getAbsolutePath() + "/temp_send.raw");
@@ -90,55 +93,29 @@ public class AudioManager{
             @Override
             public void run() {
 
-                short[] buffer = new short[minSize];
+                final byte[] buffer = new byte[minSize];
                 while(recordRunning){
+                    //TODO: check if samplesRead == minSize everytime
                     int samplesRead = ar.read(buffer, 0, minSize);
-                    writeShortBufferToStream(buffer, dosRec);
 
-                    /*
-                    ByteBuffer bytes = ByteBuffer.allocate(buffer.length);
-                    for(int i=0; i < buffer.length; i+=2) {
-                        byte byte1 = buffer[i];
-                        byte byte2 = buffer[i + 1];
-                        short newshort = (short) ((byte2 << 8) + (byte1 & 0xFF));
-                        bytes.putShort(newshort);
-                    }
-
-                    short[] bufferShort = new short[buffer.length/2];
-                    bytes.rewind();
-                    for(int i=0; i < bufferShort.length; i++){
-                        bufferShort[i] = bytes.getShort();
-                    }
-
-
-                    double[] bufferDouble = new double[bytes.capacity()/8];
-                    bytes.rewind();
-                    int i=0;
-                    while(bytes.hasRemaining()){
-                        bufferDouble[i] = bytes.getDouble();
-                        i++;
-                    }
-
-                   // double[] bufferDouble = bytes.asDoubleBuffer().array();;
-                    */
-
-                    double[] bufferDouble = new double[buffer.length];
-                    for(int i=0; i < minSize && i < samplesRead; i++){
-                        bufferDouble[i] = (double) buffer[i] / 32768.0;
-                    }
-
-
-                    sampleCounter+=samplesRead;
-                    //omit first second
+                    //TODO: seperate thread
+                    //increase of audioBuffer to 10*minSize seems to be enough to solve overflow problem
+                    writeByteBufferToStream(buffer, dosRec);
+                    final double[] bufferDouble = convertToDouble(buffer, samplesRead);
 
                     if(sampleCounter >= 44100) {
-                        if(featureDetector != null)
+                        if(featureDetector != null) {
+                            //TODO: this has to be done in a separate thread to counteract a buffer overflow
                             featureDetector.checkForFeatures(bufferDouble);
+                        }
+
                     }
+
+                    //omit first second
+                    sampleCounter+=samplesRead;
                 }
 
                 try {
-                    dosRec.flush();
                     dosRec.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -167,30 +144,32 @@ public class AudioManager{
 
     }
 
-    /*
-    private double[] convertToDouble(byte[] buffer) {
 
+    private double[] convertToDouble(byte[] buffer, int bytesRead) {
+
+        //from http://stackoverflow.com/questions/5774104/android-audio-fft-to-retrieve-specific-frequency-magnitude-using-audiorecord
 
         double[] bufferDouble = new double[buffer.length/2];
         final int bytesPerSample = 2; // As it is 16bit PCM
         final double amplification = 1.0; // choose a number as you like
-        for (int index = 0, floatIndex = 0; index < bytesRecorded - bytesPerSample + 1; index += bytesPerSample, floatIndex++) {
+        for (int index = 0, floatIndex = 0; index < bytesRead - bytesPerSample + 1; index += bytesPerSample, floatIndex++) {
             double sample = 0;
             for (int b = 0; b < bytesPerSample; b++) {
-                int v = bufferData[index + b];
+                int v = buffer[index + b];
                 if (b < bytesPerSample - 1 || bytesPerSample == 1) {
                     v &= 0xFF;
                 }
                 sample += v << (b * 8);
             }
             double sample32 = amplification * (sample / 32768.0);
-            micBufferData[floatIndex] = sample32;
+            bufferDouble[floatIndex] = sample32;
         }
 
-
-
+        return bufferDouble;
     }
-*/
+
+
+
 
     private void writeByteBufferToStream(byte[] buffer, DataOutputStream dos){
 
@@ -203,6 +182,8 @@ public class AudioManager{
                 bytes.putShort(newshort);
             }
             dos.write(bytes.array());
+            dosRec.flush();
+
         } catch(IOException e){
             e.printStackTrace();
         }

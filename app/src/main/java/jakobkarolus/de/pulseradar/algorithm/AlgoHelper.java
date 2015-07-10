@@ -81,6 +81,8 @@ public class AlgoHelper {
             double magnitude = result[i].getReal()*result[i].getReal() + result[i].getImaginary()*result[i].getImaginary();
             //adjust for window ampflication
             //magnitude = result[i].abs();
+            //TODO: consider using 10*log10 instead (no need for sqrt)
+            //-> changes the constant window amp factor -> new thresholding necessary
             magnitude = Math.sqrt(magnitude);
             magnitude = (magnitude/((double) x.length))/windowAmp;
             //magnitude /= windowAmp;

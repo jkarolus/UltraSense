@@ -1,13 +1,6 @@
 package jakobkarolus.de.pulseradar.features;
 
-import android.util.Log;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
 import jakobkarolus.de.pulseradar.algorithm.AlgoHelper;
-import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
  * FeatureDetector using a mean-based scheme per timestep to detect Features.<br>
@@ -60,6 +53,8 @@ public class MeanBasedFD extends FeatureDetector{
         //AlgoHelper.scaleToOne(audioBuffer);
         AlgoHelper.applyHighPassFilter(audioBuffer);
 
+        //TODO: Can it happen that audioBuffer is not k*4096, e.g. if reading from audio buffer is too fast
+
         double[] tempBuffer;
         //buffer is assumed to be a multiple of 4096, plus added hopSize from the previous buffer
         if(carryAvailable) {
@@ -75,32 +70,6 @@ public class MeanBasedFD extends FeatureDetector{
             //save the carry-over for the next buffer
             System.arraycopy(audioBuffer, audioBuffer.length - hopSize, carryOver, 0, hopSize);
             carryAvailable  = true;
-
-
-            final double[] bufferData = new double[tempBuffer.length];
-            System.arraycopy(tempBuffer, 0, bufferData, 0, tempBuffer.length);
-
-
-
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Log.e("WRITER", "start writing");
-                        FileWriter writer = new FileWriter(new File(PulseRadarFragment.fileDir + "data.txt"));
-                        for(double d : bufferData)
-                            writer.write(d + ",");
-                        writer.flush();
-                        writer.close();
-                        Log.e("WRITER", "finished writing");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            thread.start();
-
-
 
         }
 
