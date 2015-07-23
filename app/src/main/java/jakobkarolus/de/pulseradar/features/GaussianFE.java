@@ -33,7 +33,7 @@ public class GaussianFE extends FeatureExtractor{
 
         double[] y = toArray(uF.getUnrefinedFeature());
 
-        double[] x = getRange(uF.getStartTime(), uF.getEndTime());
+        double[] x = getRange(uF.getStartTime(), y.length, uF.getTimeIncreasePerStep());
         double mu = (x[x.length-1] + x[0]) / 2.0;
 
         double variance = 0.0;
@@ -65,11 +65,11 @@ public class GaussianFE extends FeatureExtractor{
     }
 
 
-    private double[] getRange(long start, long end) {
-        int length = (int) (end-start+1);
-        double[] range = new double[length];
-        for(int i=0; i < length; i++)
-            range[i] = (double) start+i;
+    private double[] getRange(double start, int count, double delta) {
+
+        double[] range = new double[count];
+        for(int i=0; i < count; i++)
+            range[i] = start + i*delta;
         return range;
     }
 

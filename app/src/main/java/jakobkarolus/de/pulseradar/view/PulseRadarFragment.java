@@ -45,8 +45,6 @@ import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
-import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
-import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -340,12 +338,12 @@ public class PulseRadarFragment extends Fragment{
         SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
         audioManager.setSignalGenerator(signalGen);
         //TODO: read parameters from preferences
-        featureDetector = new MeanBasedFD(4096, 2048, signalGen.getCarrierFrequency(), 4, -60, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        featureDetector = new MeanBasedFD(44100.0, 4096, 2048, signalGen.getCarrierFrequency(), 4, -60, 3, 2, 0, AlgoHelper.getHannWindow(4096));
         featureProcessor = new FeatureProcessor(getActivity());
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
-        featureProcessor.registerGestureExtractor(new DownUpGE());
-        featureProcessor.registerGestureExtractor(new SwipeGE());
+        //featureProcessor.registerGestureExtractor(new DownUpGE());
+        //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
 

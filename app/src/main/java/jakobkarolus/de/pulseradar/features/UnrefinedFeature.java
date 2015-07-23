@@ -12,20 +12,24 @@ import java.util.Vector;
  */
 public class UnrefinedFeature {
 
+    //used to calculate input data array for feature approximation
+    private double timeIncreasePerStep;
+
     //per time-step list of extracted frequency values
     private List<Double> unrefinedFeature;
 
-    private long startTime;
-    private long endTime;
+    private double startTime;
+    private double endTime;
 
     private boolean hasStarted;
 
     /**
      * initiate a new UnrefinedFeature
      */
-    public UnrefinedFeature(){
+    public UnrefinedFeature(double timeIncreasePerStep){
         this.unrefinedFeature =  new Vector<>();
         this.hasStarted = false;
+        this.timeIncreasePerStep = timeIncreasePerStep;
     }
 
     /**
@@ -38,6 +42,7 @@ public class UnrefinedFeature {
         this.hasStarted = current.hasStarted();
         this.startTime = current.getStartTime();
         this.endTime = current.getEndTime();
+        this.timeIncreasePerStep = current.getTimeIncreasePerStep();
     }
 
     /**
@@ -84,19 +89,27 @@ public class UnrefinedFeature {
         return unrefinedFeature;
     }
 
-    public long getStartTime() {
+    public double getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(long startTime) {
+    public void setStartTime(double startTime) {
         this.startTime = startTime;
     }
 
-    public long getEndTime() {
+    public double getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(long endTime) {
+    public void setEndTime(double endTime) {
         this.endTime = endTime;
+    }
+
+    public double getTimeIncreasePerStep() {
+        return timeIncreasePerStep;
+    }
+
+    public void setTimeIncreasePerStep(double timeIncreasePerStep) {
+        this.timeIncreasePerStep = timeIncreasePerStep;
     }
 }

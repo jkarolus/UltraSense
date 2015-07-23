@@ -25,13 +25,13 @@ public class MeanBasedFD extends FeatureDetector{
 
     private double[] carryOver;
     private boolean carryAvailable;
-    private long timeStep;
 
-    public MeanBasedFD(int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
-        super();
+
+    public MeanBasedFD(double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
+        super((double) hopSize / sampleRate);
         this.fftLength = fftLength;
         this.hopSize = hopSize;
-        this.carrierIdx = ((carrierFrequency/22050.0)*(fftLength/2+1))-1;
+        this.carrierIdx = ((carrierFrequency/(sampleRate/2.0))*(fftLength/2+1))-1;
         this.halfCarrierWidth = halfCarrierWidth;
         this.magnitudeThreshold = magnitudeThreshold;
         this.featHighThreshold = featHighThreshold;
@@ -44,7 +44,6 @@ public class MeanBasedFD extends FeatureDetector{
 
         //instantiate new FD every time recording starts to reset carry
         this.carryAvailable = false;
-        this.timeStep = 0;
     }
 
     @Override
@@ -77,7 +76,7 @@ public class MeanBasedFD extends FeatureDetector{
         for(int i=0; i <= tempBuffer.length - fftLength; i+=hopSize){
             System.arraycopy(tempBuffer, i, buffer, 0, fftLength);
 
-            timeStep++;
+            increaseTime();
             double[] values = AlgoHelper.fftMagnitude(buffer, win, windowAmp);
             double[] valueForTimeStep = meanExtraction(values, carrierIdx, halfCarrierWidth);
 
@@ -95,7 +94,7 @@ public class MeanBasedFD extends FeatureDetector{
             if(!uF.hasStarted()){
                 //start a new feature
                 uF.setHasStarted(true);
-                uF.setStartTime(timeStep);
+                uF.setStartTime(getTime());
                 currentSlack = 0;
                 uF.addTimeStep(valueForTimeStep);
             }
@@ -120,7 +119,7 @@ public class MeanBasedFD extends FeatureDetector{
                         //these means we have used all our slack to no avail -> remove them to get the correct feature size
                         if(uF.removeSlackedSteps(featSlackWidth)) {
                             uF.setHasStarted(false);
-                            uF.setEndTime(timeStep - 1);
+                            uF.setEndTime(getTime() - getTimeIncreasePerStep());
                             if(isHighDoppler)
                                 notifyFeatureDetectedHigh();
                             else

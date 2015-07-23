@@ -12,6 +12,13 @@ import java.util.Vector;
  */
 public abstract class FeatureDetector {
 
+    /**
+     * keep track of the time
+     */
+    private double time;
+    private double timeIncreasePerStep;
+
+
     private List<FeatureExtractor> featExtractors;
 
     /**
@@ -21,10 +28,11 @@ public abstract class FeatureDetector {
     private UnrefinedFeature currentLowFeature;
 
 
-    public FeatureDetector(){
+    public FeatureDetector(double timeIncreasePerStep){
         this.featExtractors = new Vector<>();
-        this.currentHighFeature = new UnrefinedFeature();
-        this.currentLowFeature = new UnrefinedFeature();
+        this.timeIncreasePerStep = timeIncreasePerStep;
+        this.currentHighFeature = new UnrefinedFeature(this.timeIncreasePerStep);
+        this.currentLowFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }
 
 
@@ -40,14 +48,14 @@ public abstract class FeatureDetector {
         for(FeatureExtractor fe : this.featExtractors)
             fe.onHighFeatureDetected(new UnrefinedFeature(currentHighFeature));
 
-        this.currentHighFeature = new UnrefinedFeature();
+        this.currentHighFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }
 
     public void notifyFeatureDetectedLow(){
         for(FeatureExtractor fe : this.featExtractors)
             fe.onLowFeatureDetected(new UnrefinedFeature(currentLowFeature));
 
-        this.currentLowFeature = new UnrefinedFeature();
+        this.currentLowFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }
 
         public void registerFeatureExtractor(FeatureExtractor featureExtractor){
@@ -69,4 +77,25 @@ public abstract class FeatureDetector {
     public UnrefinedFeature getCurrentLowFeature() {
         return currentLowFeature;
     }
+
+    protected double getTime() {
+        return time;
+    }
+
+    protected void setTime(double time) {
+        this.time = time;
+    }
+
+    protected double getTimeIncreasePerStep() {
+        return timeIncreasePerStep;
+    }
+
+    protected void setTimeIncreasePerStep(double timeIncreasePerStep) {
+        this.timeIncreasePerStep = timeIncreasePerStep;
+    }
+
+    protected void increaseTime(){
+        this.time += timeIncreasePerStep;
+    }
+
 }

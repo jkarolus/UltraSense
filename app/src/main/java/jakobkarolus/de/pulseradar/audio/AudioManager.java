@@ -96,6 +96,7 @@ public class AudioManager{
                 final byte[] buffer = new byte[minSize];
                 while(recordRunning){
                     //TODO: check if samplesRead == minSize everytime
+                    //TODO: use a callback -> onRecordStateListener
                     int samplesRead = ar.read(buffer, 0, minSize);
 
                     //TODO: seperate thread
