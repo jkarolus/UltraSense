@@ -2,10 +2,23 @@
 <resources>
     <string-array name="pref_mode_entries">
         <item>Continious Wave</item>
-        <item>Frequency Modulated Continious Wave</item>
+        <item>Frequency Modulated CW (experimental)</item>
     </string-array>
     <string-array name="pref_mode_values">
         <item>CW</item>
         <item>FMCW</item>
+    </string-array>
+
+    <string-array name="pref_key_fft_length_entries">
+        <item>8192</item>
+        <item>4096</item>
+        <item>2048</item>
+        <item>1024</item>
+    </string-array>
+    <string-array name="pref_key_fft_length_values">
+        <item>8192</item>
+        <item>4096</item>
+        <item>2048</item>
+        <item>1024</item>
     </string-array>
 </resources>

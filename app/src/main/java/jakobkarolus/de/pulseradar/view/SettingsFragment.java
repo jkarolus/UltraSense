@@ -31,6 +31,15 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
 
     public static final String KEY_CW_FREQ = "pref_key_cw_freq";
 
+    public static final String KEY_FFT_LENGTH = "pref_key_fft_length";
+    public static final String KEY_HOPSIZE = "pref_key_hopsize";
+    public static final String KEY_HALF_CARRIER_WIDTH = "pref_key_halfCarrierWidth";
+    public static final String KEY_DB_THRESHOLD = "pref_key_db_threshold";
+    public static final String KEY_HIGH_FEAT_THRESHOLD = "pref_key_feat_high_threshold";
+    public static final String KEY_LOW_FEAT_THRESHOLD = "pref_key_feat_low_threshold";
+    public static final String KEY_FEAT_SLACK = "pref_key_feat_slack";
+
+
 
 
     @Override

@@ -41,6 +41,7 @@ import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 import jakobkarolus.de.pulseradar.audio.AudioManager;
+import jakobkarolus.de.pulseradar.features.DummyFeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
@@ -54,7 +55,7 @@ public class PulseRadarFragment extends Fragment{
     private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
     private Bitmap lastSpectrogram;
     public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
-
+    public static final double SAMPLE_RATE = 44100.0;
 
     private AudioManager audioManager;
     private StftManager stftManager;
@@ -337,23 +338,49 @@ public class PulseRadarFragment extends Fragment{
         super.onResume();
         SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
         audioManager.setSignalGenerator(signalGen);
-        //TODO: read parameters from preferences
-        featureDetector = new MeanBasedFD(44100.0, 4096, 2048, signalGen.getCarrierFrequency(), 4, -60, 3, 2, 0, AlgoHelper.getHannWindow(4096));
+        initializeFeatureDetector();
+    }
+
+    private void initializeFeatureDetector() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
+        try{
+            if(mode.equals(SettingsFragment.CW_MODE)){
+                int fftLength = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_FFT_LENGTH, ""));
+                double hopSizeFraction = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_HOPSIZE, ""));
+                int hopSize = (int) (hopSizeFraction * fftLength);
+                int halfCarrierWidth = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_HALF_CARRIER_WIDTH, ""));
+                double dbThreshold = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_DB_THRESHOLD, ""));
+                double highFeatureThr = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_HIGH_FEAT_THRESHOLD, ""));
+                double lowFeatureThr = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_LOW_FEAT_THRESHOLD, ""));
+                int slackWidth = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_FEAT_SLACK, ""));
+                double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
+
+                featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength));
+            }
+            else
+                featureDetector = new DummyFeatureDetector(0.0);
+
+        }catch (NumberFormatException e) {
+            Toast.makeText(getActivity(), "Specified Parameters are not valid!", Toast.LENGTH_LONG).show();
+            featureDetector = new DummyFeatureDetector(0.0);
+        }
+
         featureProcessor = new FeatureProcessor(getActivity());
+        //TODO: GesturesExtractors as preferences?
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
         //featureProcessor.registerGestureExtractor(new DownUpGE());
         //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
-
     }
+
 
     private SignalGenerator getSignalGeneratorForMode(SharedPreferences sharedPreferences) {
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
         try {
             if(mode.equals(SettingsFragment.FMCW_MODE)) {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 double botFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_BOT_FREQ, ""));
                 double topFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_TOP_FREQ, ""));
                 double chirpDur = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_CHIRP_DUR, ""));
