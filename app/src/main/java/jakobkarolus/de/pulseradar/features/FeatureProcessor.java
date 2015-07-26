@@ -1,7 +1,8 @@
 package jakobkarolus.de.pulseradar.features;
 
-import android.content.Context;
+import android.app.Activity;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -26,10 +27,10 @@ public class FeatureProcessor {
 
     private List<Feature> features;
     private List<GestureExtractor> gestureExtractors;
-    private Context ctx;
+    private Activity ctx;
     private FileWriter featWriter;
 
-    public FeatureProcessor(Context ctx){
+    public FeatureProcessor(Activity ctx){
         this.ctx = ctx;
         features = new Vector<>();
         gestureExtractors = new Vector<>();
@@ -64,9 +65,7 @@ public class FeatureProcessor {
         }
     }
 
-
-    public void processFeature(final Feature feature){
-
+    public void saveFeatureToFile(final Feature feature){
         //save feature
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -79,14 +78,30 @@ public class FeatureProcessor {
             }
         });
         thread.start();
+    }
+
+
+    public void processFeature(final Feature feature){
+
+        saveFeatureToFile(feature);
 
         //process feature
         features.add(feature);
         for(GestureExtractor ge : gestureExtractors) {
             final List<Gesture> gestures = ge.detectGesture(features);
-            for(Gesture g : gestures) {
+            for(final Gesture g : gestures) {
                 Log.e(TAG, g.toString());
+                ctx.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(ctx, g.toString(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }
+    }
+
+    public Activity getActivity(){
+        return ctx;
     }
 }

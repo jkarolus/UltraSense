@@ -37,11 +37,13 @@ public abstract class FeatureDetector {
 
 
     /**
-     * process the audioBuffer and detect features. Call notify... upon detection
+     * process the audioBuffer and detect features. Call notify... upon detection.<br>
+     * The buffer is not guaranteed to be of the same length every time!
      *
      * @param audioBuffer
+     * @param applyHighPass suggestion, whether to use a high pass filter on this data (e.g. preprocessed data for testing that has already been filtered)
      */
-    public abstract void checkForFeatures(double[] audioBuffer);
+    public abstract void checkForFeatures(double[] audioBuffer, boolean applyHighPass);
 
 
     public void notifyFeatureDetectedHigh(){

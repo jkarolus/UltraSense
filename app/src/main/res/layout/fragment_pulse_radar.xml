@@ -1,4 +1,5 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
@@ -6,9 +7,17 @@
     android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context=".PulseRadar$PlaceholderFragment">
 
+    <TextView
+        android:id="@+id/text_record"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Recording"
+        android:textSize="25dp"
+        android:textStyle="bold"/>
     
     <Button
         android:id="@+id/button_start_record"
+        android:layout_below="@id/text_record"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:onClick="startRecord"
@@ -23,12 +32,51 @@
         android:onClick="stopRecord"
         android:text="@string/button_stop_record"/>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#FF000000"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:id="@+id/text_detection"
+        android:layout_below="@id/button_stop_record"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Detection"
+        android:textSize="25dp"
+        android:textStyle="bold"/>
+
+    <Button
+        android:layout_below="@+id/text_detection"
+        android:id="@+id/button_start_detection"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_start_detection"/>
+
+    <Button
+        android:layout_below="@id/button_start_detection"
+        android:id="@+id/button_stop_detection"
+        android:enabled="false"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/button_stop_detection"/>
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#FF000000"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"/>
+
 
     <TextView
         android:id="@+id/info_text"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/button_stop_record"
+        android:layout_below="@id/button_stop_detection"
         android:layout_marginTop="10dp"
         android:text="@string/info"/>
 
@@ -50,11 +98,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
 
+
     <Button
         android:layout_below="@id/button_last_spec"
         android:id="@+id/button_test_corr"
         android:text="Apply Correlation Correction"
-        android:enabled="true"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
@@ -62,9 +111,9 @@
         android:layout_below="@id/button_test_corr"
         android:id="@+id/button_test_detection"
         android:text="Test Detection"
-        android:enabled="true"
+        android:visibility="visible"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
 
-</RelativeLayout>
+</LinearLayout>

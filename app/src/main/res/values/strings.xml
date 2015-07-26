@@ -26,4 +26,6 @@
     <string name="pref_key_feat_high_threshold">High Feature Treshold</string>
     <string name="pref_key_feat_low_threshold">Low Feature Threshold</string>
     <string name="pref_key_feat_slack">Feature Slack width</string>
+    <string name="button_start_detection">Start Detection</string>
+    <string name="button_stop_detection">Stop Detection</string>
 </resources>

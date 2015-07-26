@@ -2,7 +2,11 @@ package jakobkarolus.de.pulseradar.features;
 
 import android.util.Log;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
+
+import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
  * A FeatureExtractor implementing linear least-square approx using a Gaussian curve
@@ -52,6 +56,30 @@ public class GaussianFE extends FeatureExtractor{
             Log.e("GFE", "NaN");
         }
 
+        if(Math.abs(weight-3.42311923) <= 1e-3) {
+            try {
+                FileWriter writer = new FileWriter(PulseRadarFragment.fileDir + "last_feat.txt");
+                writer.write("x: ");
+                for (double d : x) {
+                    writer.write("" + d + ",");
+                }
+                writer.flush();
+
+                writer.write("\ny: ");
+                for (double d : y) {
+                    writer.write("" + d + ",");
+                }
+                writer.flush();
+                writer.write("\nX*X': " + innerProd1);
+                writer.write("\nX*y: " + innerProd2);
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
         return new GaussianFeature(mu, sigma, weight);
     }
 
@@ -84,7 +112,7 @@ public class GaussianFE extends FeatureExtractor{
     private double[] normpdf(double[] x, double mu, double sigma){
         double[] y = new double[x.length];
         for(int i=0; i < x.length; i++){
-            y[i] = Math.exp(-0.5*Math.pow((x[i]-mu)/sigma, 2)) / (Math.sqrt(2*Math.PI)*sigma);
+            y[i] = Math.exp(-0.5*Math.pow((x[i]-mu)/sigma, 2.0)) / (Math.sqrt(2.0*Math.PI)*sigma);
         }
         return y;
     }

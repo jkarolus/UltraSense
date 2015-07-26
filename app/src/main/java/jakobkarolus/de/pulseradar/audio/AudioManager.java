@@ -32,7 +32,6 @@ public class AudioManager{
     private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
 
     private static final int SAMPLE_RATE = 44100;
-    private static final double STD_FREQ = 20000;
     private DataOutputStream dosSend;
     private DataOutputStream dosRec;
     private File tempFileRec;
@@ -44,11 +43,8 @@ public class AudioManager{
     private SignalGenerator signalGen;
 
     private boolean recordRunning = false;
-    private double currentFreq;
-
+    private boolean detectionRunning = false;
     private FeatureDetector featureDetector;
-
-    private boolean once;
 
     //force a multiple of 4096
     private static final int minSize = 4*4096;//AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT);
@@ -57,8 +53,73 @@ public class AudioManager{
     public AudioManager(Context ctx){
         this.ctx = ctx;
         new File(fileDir).mkdirs();
-        currentFreq = STD_FREQ;
-        once = false;
+    }
+
+
+    /**
+     * starts detecting features/gesture depending on the used extractors.<br>
+     * Does not record the data for later analysis
+     *
+     */
+    public void startDetection(){
+
+        final AudioTrack at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,minSize,AudioTrack.MODE_STREAM);
+        final AudioRecord ar = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, 10*minSize);
+
+        final byte[] audio =  signalGen.generateAudio();
+
+        Thread detectionThread = new Thread(new Runnable() {
+
+            private int sampleCounter;
+            @Override
+            public void run() {
+
+                final byte[] buffer = new byte[minSize];
+                while(detectionRunning){
+                    //TODO: it seems that read() always return minSize bytes
+                    int samplesRead = ar.read(buffer, 0, minSize);
+                    if(samplesRead != minSize) {
+                        Log.e("AUDIO_MANAGER", "Samples read not equal minSize (" + samplesRead + "). Might be loosing data!");
+                    }
+
+                    //size of bufferDouble is buffer.length/2
+                    final double[] bufferDouble = convertToDouble(buffer, samplesRead);
+
+                    if(sampleCounter >= 44100) {
+                        if(featureDetector != null) {
+                            featureDetector.checkForFeatures(bufferDouble, true);
+                        }
+                    }
+                    //omit first second
+                    sampleCounter+=samplesRead;
+                }
+            }
+        });
+
+        Thread playThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                at.play();
+                while(detectionRunning){
+                    at.write(audio, 0, audio.length);
+                }
+                ar.stop();
+            }
+        });
+
+        ar.startRecording();
+        detectionRunning = true;
+        detectionThread.start();
+        playThread.start();
+    }
+
+
+    /**
+     * stops feature/gesture detection
+     */
+    public void stopDetection() {
+        detectionRunning = false;
     }
 
     /**
@@ -95,19 +156,21 @@ public class AudioManager{
 
                 final byte[] buffer = new byte[minSize];
                 while(recordRunning){
-                    //TODO: check if samplesRead == minSize everytime
-                    //TODO: use a callback -> onRecordStateListener
+                    //TODO: it seems that read() always return minSize bytes
                     int samplesRead = ar.read(buffer, 0, minSize);
+                    if(samplesRead != minSize) {
+                        Log.e("AUDIO_MANAGER", "Samples read not equal minSize (" + samplesRead + "). Might be loosing data!");
+                    }
 
-                    //TODO: seperate thread
-                    //increase of audioBuffer to 10*minSize seems to be enough to solve overflow problem
+                    //TODO: consider seperate thread (in case of buffer overflow)
                     writeByteBufferToStream(buffer, dosRec);
+
+                    //size of bufferDouble is buffer.length/2
                     final double[] bufferDouble = convertToDouble(buffer, samplesRead);
 
                     if(sampleCounter >= 44100) {
                         if(featureDetector != null) {
-                            //TODO: this has to be done in a separate thread to counteract a buffer overflow
-                            featureDetector.checkForFeatures(bufferDouble);
+                            featureDetector.checkForFeatures(bufferDouble, true);
                         }
 
                     }
@@ -183,7 +246,7 @@ public class AudioManager{
                 bytes.putShort(newshort);
             }
             dos.write(bytes.array());
-            dosRec.flush();
+            dos.flush();
 
         } catch(IOException e){
             e.printStackTrace();

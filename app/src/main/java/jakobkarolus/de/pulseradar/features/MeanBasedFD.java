@@ -47,12 +47,11 @@ public class MeanBasedFD extends FeatureDetector{
     }
 
     @Override
-    public void checkForFeatures(double[] audioBuffer) {
+    public void checkForFeatures(double[] audioBuffer, boolean applyHighPass) {
 
         //AlgoHelper.scaleToOne(audioBuffer);
-        AlgoHelper.applyHighPassFilter(audioBuffer);
-
-        //TODO: Can it happen that audioBuffer is not k*4096, e.g. if reading from audio buffer is too fast
+        if(applyHighPass)
+            AlgoHelper.applyHighPassFilter(audioBuffer);
 
         double[] tempBuffer;
         //buffer is assumed to be a multiple of 4096, plus added hopSize from the previous buffer

@@ -11,7 +11,7 @@ public class DummyFeatureDetector extends FeatureDetector{
     }
 
     @Override
-    public void checkForFeatures(double[] audioBuffer) {
+    public void checkForFeatures(double[] audioBuffer, boolean applyHighPass) {
         //do nothing
 
     }

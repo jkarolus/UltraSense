@@ -46,6 +46,7 @@ import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
+import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -63,6 +64,9 @@ public class PulseRadarFragment extends Fragment{
 
     private Button startButton;
     private Button stopButton;
+    private Button startDetectionButton;
+    private Button stopDetectionButton;
+
     private Button computeStftButton;
     private Button showLastSpec;
     private Button applyCorrelationCorrection;
@@ -88,6 +92,8 @@ public class PulseRadarFragment extends Fragment{
         rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
         startButton = (Button) rootView.findViewById(R.id.button_start_record);
         stopButton = (Button) rootView.findViewById(R.id.button_stop_record);
+        startDetectionButton = (Button) rootView.findViewById(R.id.button_start_detection);
+        stopDetectionButton = (Button) rootView.findViewById(R.id.button_stop_detection);
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
         applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
@@ -111,6 +117,18 @@ public class PulseRadarFragment extends Fragment{
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+        });
+        startDetectionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startDetection();
+            }
+        });
+        stopDetectionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopDetection();
             }
         });
         computeStftButton.setOnClickListener(new View.OnClickListener() {
@@ -147,7 +165,37 @@ public class PulseRadarFragment extends Fragment{
         return rootView;
     }
 
+    private void stopDetection() {
+        //save it for comparison -> the features
+        if(featureProcessor != null) {
+            featureProcessor.closeFeatureWriter();
+        }
+
+        startDetectionButton.setEnabled(true);
+        startDetectionButton.setText(R.string.button_start_detection);
+        startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+        stopDetectionButton.setEnabled(false);
+        audioManager.stopDetection();
+    }
+
+    private void startDetection() {
+
+        setUpSignalAndFeatureStuff(false);
+
+        //save it for comparison -> the features
+        if(featureProcessor != null)
+            featureProcessor.startFeatureWriter();
+
+        startDetectionButton.setEnabled(false);
+        startDetectionButton.setText("Detection running...");
+        startDetectionButton.setBackgroundColor(Color.RED);
+        stopDetectionButton.setEnabled(true);
+        audioManager.startDetection();
+    }
+
     private void testDetection() throws IOException {
+
+        setUpSignalAndFeatureStuff(true);
 
         new TestDetectionTask().execute();
 
@@ -171,6 +219,7 @@ public class PulseRadarFragment extends Fragment{
         @Override
         protected void onPostExecute(Void aVoid) {
             pd.dismiss();
+            featureProcessor.closeFeatureWriter();
 
         }
 
@@ -181,19 +230,16 @@ public class PulseRadarFragment extends Fragment{
             try {
 
                 //save it for comparison -> the features
-                //featWriter = new FileWriter(new File(fileDir + "feat_up_down.txt"));
                 featureProcessor.startFeatureWriter();
 
                 List<Double> dataList = new Vector<>();
-                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "test3_rec.bin"));
+                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "testing/up_down_s3.bin"));
                 boolean notEnded = true;
 
                 publishProgress(new String[]{"Reading values"});
                 while (notEnded) {
                     try {
-                        dataList.add(din.readDouble());
-                        if (dataList.size() >= 1000000)
-                            notEnded = false;
+                        dataList.add(din.readDouble());;
                     } catch (EOFException e) {
                         notEnded = false;
                     }
@@ -207,11 +253,8 @@ public class PulseRadarFragment extends Fragment{
                 double[] buffer = new double[length];
                 for (int i = 0; i <= data.length - length; i += length) {
                     System.arraycopy(data, i, buffer, 0, length);
-                    featureDetector.checkForFeatures(buffer);
+                    featureDetector.checkForFeatures(buffer, false);
                 }
-                //featWriter.close();
-                featureProcessor.closeFeatureWriter();
-
             }
             catch(IOException e){
                 e.printStackTrace();
@@ -297,6 +340,8 @@ public class PulseRadarFragment extends Fragment{
 
     private void startRecord() throws IOException {
 
+        setUpSignalAndFeatureStuff(false);
+
         //save it for comparison -> the features
         if(featureProcessor != null)
             featureProcessor.startFeatureWriter();
@@ -328,6 +373,12 @@ public class PulseRadarFragment extends Fragment{
         fileNameDialog.show(ft, "FileNameDialog");
     }
 
+    private void setUpSignalAndFeatureStuff(boolean testData){
+        SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
+        audioManager.setSignalGenerator(signalGen);
+        initializeFeatureDetector(testData);
+    }
+
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_settings).setVisible(true);
@@ -336,12 +387,9 @@ public class PulseRadarFragment extends Fragment{
     @Override
     public void onResume() {
         super.onResume();
-        SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
-        audioManager.setSignalGenerator(signalGen);
-        initializeFeatureDetector();
     }
 
-    private void initializeFeatureDetector() {
+    private void initializeFeatureDetector(boolean testData) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
         try{
@@ -366,7 +414,11 @@ public class PulseRadarFragment extends Fragment{
             featureDetector = new DummyFeatureDetector(0.0);
         }
 
-        featureProcessor = new FeatureProcessor(getActivity());
+        if(testData)
+            featureProcessor = new TestDataFeatureProcessor(getActivity());
+        else
+            featureProcessor = new FeatureProcessor(getActivity());
+
         //TODO: GesturesExtractors as preferences?
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
@@ -374,6 +426,7 @@ public class PulseRadarFragment extends Fragment{
         //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
+
     }
 
 
