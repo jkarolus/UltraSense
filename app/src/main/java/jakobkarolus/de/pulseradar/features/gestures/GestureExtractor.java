@@ -21,4 +21,14 @@ public interface GestureExtractor {
      * @return a list of gestures that match the features
      */
     public List<Gesture> detectGesture(List<Feature> features);
+
+    /**
+     * use the given list of features to calibrate thresholds.<br>
+     * GestureExtractor should do a sanity check on the given list and return
+     * whether they used the stack for calibration
+     *
+     * @param features the current List of detected features
+     * @return true if the list corresponds to the gesture; false otherwise
+     */
+    public boolean calibrate(List<Feature> features);
 }

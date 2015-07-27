@@ -42,6 +42,12 @@ public class DownUpGE implements GestureExtractor{
         return gestures;
     }
 
+    @Override
+    public boolean calibrate(List<Feature> features) {
+        //TODO:implement
+        return false;
+    }
+
     protected boolean isUpGesture(Feature f) {
         if(f.getLength() >= 0.05 && f.getLength() <= 0.16) {
             if (f.getWeight() >= -4.5 && f.getWeight() <= -2.5) {

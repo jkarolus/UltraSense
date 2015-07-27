@@ -13,6 +13,10 @@ import jakobkarolus.de.pulseradar.features.Feature;
  */
 public class UpGE implements GestureExtractor{
 
+    private double featureLengthMinThr = Double.MAX_VALUE;
+    private double featureLengthMaxThr = Double.MIN_VALUE;
+    private double featureWeightMinThr = Double.MAX_VALUE;
+    private double featureWeightMaxThr = Double.MIN_VALUE;
 
     @Override
     public List<Gesture> detectGesture(List<Feature> features) {
@@ -28,5 +32,30 @@ public class UpGE implements GestureExtractor{
             }
         }
         return gestures;
+    }
+
+    @Override
+    public boolean calibrate(List<Feature> features) {
+        //do a sanity check
+        if(features.size() != 1)
+            return false;
+
+        Feature f = features.get(0);
+        if(f.getWeight() >= 0.0)
+            return false;
+
+        if(f.getWeight() <= featureWeightMinThr)
+            featureWeightMinThr = f.getWeight();
+
+        if(f.getWeight() >= featureWeightMaxThr)
+            featureWeightMaxThr = f.getWeight();
+
+        if(f.getLength() <= featureLengthMinThr)
+            featureLengthMinThr = f.getWeight();
+
+        if(f.getLength() <= featureLengthMaxThr)
+            featureLengthMaxThr = f.getWeight();
+
+        return true;
     }
 }

@@ -32,11 +32,13 @@ public class FeatureProcessor {
     private Activity ctx;
     private FileWriter featWriter;
     private double currentFeatureTime;
+    private boolean isCalibrating;
 
     public FeatureProcessor(Activity ctx){
         this.ctx = ctx;
         features = new Vector<>();
         gestureExtractors = new Vector<>();
+        isCalibrating = false;
     }
 
     public void registerGestureExtractor(GestureExtractor ge){
@@ -81,6 +83,14 @@ public class FeatureProcessor {
             }
         });
         thread.start();
+    }
+
+    public void startCalibrating(){
+        isCalibrating = true;
+    }
+
+    public void stopCalibrating(){
+        isCalibrating = false;
     }
 
 
