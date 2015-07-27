@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Recording"
-        android:textSize="25dp"
+        android:textSize="20sp"
         android:textStyle="bold"/>
     
     <Button
@@ -45,7 +45,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Detection"
-        android:textSize="25dp"
+        android:textSize="20sp"
         android:textStyle="bold"/>
 
     <Button
@@ -112,6 +112,12 @@
         android:id="@+id/button_test_detection"
         android:text="Test Detection"
         android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/button_play_audio"
+        android:text="Play Audio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

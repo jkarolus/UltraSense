@@ -11,10 +11,10 @@ import jakobkarolus.de.pulseradar.features.Feature;
  */
 public class DownUpGE implements GestureExtractor{
 
-    //fast: 10.5 <-> 12.5
-    //slow: 7.5 <-> 8
-    private static final double UP_DOWN_THRESHOLD_HIGH = 13.0;
-    private static final double UP_DOWN_THRESHOLD_LOW = 7.0;
+    //fast: 0.3 <-> 0.4
+    //slow: 0.4 <-> 0.6
+    private static final double UP_DOWN_THRESHOLD_HIGH = 0.6;
+    private static final double UP_DOWN_THRESHOLD_LOW = 0.3;
 
 
     @Override
@@ -43,8 +43,8 @@ public class DownUpGE implements GestureExtractor{
     }
 
     protected boolean isUpGesture(Feature f) {
-        if(f.getLength() >= 1.5 && f.getLength() <= 3.5) {
-            if (f.getWeight() <= -60.0) {
+        if(f.getLength() >= 0.05 && f.getLength() <= 0.16) {
+            if (f.getWeight() >= -4.5 && f.getWeight() <= -2.5) {
                 return true;
             }
         }
@@ -52,8 +52,8 @@ public class DownUpGE implements GestureExtractor{
     }
 
     protected boolean isDownGesture(Feature f) {
-        if(f.getLength() >= 1.5 && f.getLength() <= 3.5) {
-            if (f.getWeight() >= 55.0) {
+        if(f.getLength() >= 0.05 && f.getLength() <= 0.16) {
+            if (f.getWeight() >= 2.5 && f.getWeight() <= 4.5) {
                 return true;
             }
         }

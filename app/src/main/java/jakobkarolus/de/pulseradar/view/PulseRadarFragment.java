@@ -7,12 +7,13 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.media.AudioFormat;
-import android.media.AudioTrack;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -47,6 +48,7 @@ import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
+import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -69,12 +71,12 @@ public class PulseRadarFragment extends Fragment{
 
     private Button computeStftButton;
     private Button showLastSpec;
+    private Button playAudioButton;
     private Button applyCorrelationCorrection;
     private Button testDetection;
     private View rootView;
 
-    private AudioTrack at;
-
+    private MediaPlayer mp;
     private FeatureProcessor featureProcessor;
 
 
@@ -83,7 +85,6 @@ public class PulseRadarFragment extends Fragment{
         super.onCreate(savedInstanceState);
         audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
-        at = new AudioTrack(android.media.AudioManager.STREAM_MUSIC,44100, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT),AudioTrack.MODE_STREAM);
     }
 
     @Override
@@ -98,6 +99,7 @@ public class PulseRadarFragment extends Fragment{
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
         applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
         testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
+        playAudioButton = (Button) rootView.findViewById(R.id.button_play_audio);
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,8 +156,17 @@ public class PulseRadarFragment extends Fragment{
             public void onClick(View v) {
                 try {
                     testDetection();
-                    at.play();
 
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        playAudioButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    playAudio();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -163,6 +174,53 @@ public class PulseRadarFragment extends Fragment{
         });
 
         return rootView;
+    }
+
+
+    private void playAudio() throws IOException {
+
+        if(mp == null) {
+
+            /*
+            try {
+                Class audioSystemClass = Class.forName("android.media.AudioSystem");
+                Method setForceUse = audioSystemClass.getMethod("setForceUse", int.class, int.class);
+                setForceUse.invoke(null, 1, 2);
+                setForceUse.invoke(null, 0, 1);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            */
+
+            android.media.AudioManager am = (android.media.AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+            //am.setSpeakerphoneOn(true);
+
+            playAudioButton.setText("Stop Audio");
+            //mp = MediaPlayer.create(getActivity(), R.raw.enter_sandman);
+            //mp.start();
+            int streamMusic = android.media.AudioManager.STREAM_MUSIC;
+            mp = new MediaPlayer();
+            mp.setAudioStreamType(streamMusic);
+            AssetFileDescriptor afd = getActivity().getResources().openRawResourceFd(R.raw.enter_sandman);
+            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            mp.prepare();
+            mp.start();
+
+        }
+        else{
+            mp.stop();
+            mp.release();
+            mp = null;
+            playAudioButton.setText("Play Audio");
+        }
+
     }
 
     private void stopDetection() {
@@ -422,7 +480,7 @@ public class PulseRadarFragment extends Fragment{
         //TODO: GesturesExtractors as preferences?
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
-        //featureProcessor.registerGestureExtractor(new DownUpGE());
+        featureProcessor.registerGestureExtractor(new DownUpGE());
         //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
