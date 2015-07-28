@@ -110,6 +110,10 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_settings).setVisible(false);
+        menu.findItem(R.id.action_compute_stft).setVisible(false);
+        menu.findItem(R.id.action_show_last).setVisible(false);
+        menu.findItem(R.id.action_test_detection).setVisible(false);
+        menu.findItem(R.id.action_update_debug_info).setVisible(false);
     }
 
 }

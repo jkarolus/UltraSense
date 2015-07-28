@@ -16,23 +16,33 @@ import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.StreamCorruptedException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.R;
@@ -48,7 +58,9 @@ import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
-import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
+import jakobkarolus.de.pulseradar.features.gestures.DownGE;
+import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
+import jakobkarolus.de.pulseradar.features.gestures.UpGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -72,9 +84,13 @@ public class PulseRadarFragment extends Fragment{
     private Button computeStftButton;
     private Button showLastSpec;
     private Button playAudioButton;
+    private Button calibrateButton;
     private Button applyCorrelationCorrection;
     private Button testDetection;
+    private TextView countDownView;
+    private View calibVisualFeedbackView;
     private View rootView;
+    private TextView debugInfo;
 
     private MediaPlayer mp;
     private FeatureProcessor featureProcessor;
@@ -85,6 +101,7 @@ public class PulseRadarFragment extends Fragment{
         super.onCreate(savedInstanceState);
         audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -100,6 +117,11 @@ public class PulseRadarFragment extends Fragment{
         applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
         testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
         playAudioButton = (Button) rootView.findViewById(R.id.button_play_audio);
+        calibrateButton = (Button) rootView.findViewById(R.id.button_calibrate);
+        countDownView = (TextView) rootView.findViewById(R.id.text_countdown);
+        calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
+        debugInfo = (TextView) rootView.findViewById(R.id.text_debug_info);
+        updateDebugInfo();
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -172,8 +194,98 @@ public class PulseRadarFragment extends Fragment{
                 }
             }
         });
+        calibrateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startCalibration();
+            }
+        });
 
         return rootView;
+    }
+
+    private void startCalibration() {
+
+        setUpSignalAndFeatureStuff(false, true);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Choose Gesture to calibrate");
+        builder.setItems(featureProcessor.getGestureExtractorNames(), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int index) {
+
+
+                //save it for comparison -> the features
+                if (featureProcessor != null)
+                    featureProcessor.startFeatureWriter();
+                featureProcessor.startCalibrating(featureProcessor.getGestureExtractors().get(index));
+                displayCountdownAndStartDetection();
+            }
+        });
+        builder.show();
+
+
+    }
+
+    private void displayCountdownAndStartDetection() {
+
+        countDownView.setText("3");
+        countDownView.setVisibility(View.VISIBLE);
+        CountDownTimer timer = new CountDownTimer(3000, 500) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                int time = (int) Math.ceil(((double) millisUntilFinished / 1000.0));
+                countDownView.setText(""+time);
+            }
+
+            @Override
+            public void onFinish() {
+                countDownView.setVisibility(View.INVISIBLE);
+                startDetectionButton.setEnabled(false);
+                startDetectionButton.setText("Detection running...");
+                startDetectionButton.setBackgroundColor(Color.RED);
+                stopDetectionButton.setEnabled(true);
+                audioManager.startDetection();
+            }
+        }.start();
+
+    }
+
+    public void onCalibrationStep(final boolean successful){
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateDebugInfo();
+                startDetectionButton.setEnabled(true);
+                startDetectionButton.setText(R.string.button_start_detection);
+                startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+                stopDetectionButton.setEnabled(false);
+                audioManager.stopDetection();
+
+
+                if (successful)
+                    calibVisualFeedbackView.setBackgroundColor(Color.GREEN);
+                else
+                    calibVisualFeedbackView.setBackgroundColor(Color.RED);
+
+                calibVisualFeedbackView.setVisibility(View.VISIBLE);
+                final Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                calibVisualFeedbackView.setVisibility(View.INVISIBLE);
+                                displayCountdownAndStartDetection();
+                            }
+                        });
+                        timer.cancel();
+                    }
+                }, 200, 100);
+            }
+        });
     }
 
 
@@ -238,7 +350,7 @@ public class PulseRadarFragment extends Fragment{
 
     private void startDetection() {
 
-        setUpSignalAndFeatureStuff(false);
+        setUpSignalAndFeatureStuff(false, false);
 
         //save it for comparison -> the features
         if(featureProcessor != null)
@@ -253,11 +365,42 @@ public class PulseRadarFragment extends Fragment{
 
     private void testDetection() throws IOException {
 
-        setUpSignalAndFeatureStuff(true);
+        setUpSignalAndFeatureStuff(true, false);
 
         new TestDetectionTask().execute();
 
 
+    }
+
+    public void onCalibrationFinished(final String thresholds, final String name) {
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(featureProcessor != null) {
+                    featureProcessor.closeFeatureWriter();
+                }
+
+                startDetectionButton.setEnabled(true);
+                startDetectionButton.setText(R.string.button_start_detection);
+                startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+                stopDetectionButton.setEnabled(false);
+                audioManager.stopDetection();
+
+                setUpSignalAndFeatureStuff(false, false);
+                updateDebugInfo();
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setTitle("Thresholds " + name);
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                    }
+                });
+                builder.setMessage(thresholds);
+                builder.show();
+            }
+        });
     }
 
     private class TestDetectionTask extends AsyncTask<Void, String, Void> {
@@ -398,7 +541,7 @@ public class PulseRadarFragment extends Fragment{
 
     private void startRecord() throws IOException {
 
-        setUpSignalAndFeatureStuff(false);
+        setUpSignalAndFeatureStuff(false, false);
 
         //save it for comparison -> the features
         if(featureProcessor != null)
@@ -431,15 +574,51 @@ public class PulseRadarFragment extends Fragment{
         fileNameDialog.show(ft, "FileNameDialog");
     }
 
-    private void setUpSignalAndFeatureStuff(boolean testData){
+    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating){
         SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
         audioManager.setSignalGenerator(signalGen);
-        initializeFeatureDetector(testData);
+        initializeFeatureDetector(testData, isCalibrating);
     }
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_settings).setVisible(true);
+        menu.findItem(R.id.action_compute_stft).setVisible(true);
+        menu.findItem(R.id.action_show_last).setVisible(true);
+        menu.findItem(R.id.action_test_detection).setVisible(true);
+        menu.findItem(R.id.action_update_debug_info).setVisible(true);
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        if (id == R.id.action_test_detection) {
+            try {
+                testDetection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+
+        if (id == R.id.action_compute_stft) {
+            computeStft();
+            return true;
+        }
+
+        if (id == R.id.action_show_last){
+            showLastSpec();
+            return true;
+        }
+
+        if(id == R.id.action_update_debug_info) {
+            updateDebugInfo();
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -447,7 +626,7 @@ public class PulseRadarFragment extends Fragment{
         super.onResume();
     }
 
-    private void initializeFeatureDetector(boolean testData) {
+    private void initializeFeatureDetector(boolean testData, boolean isCalibrating) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
         try{
@@ -473,18 +652,62 @@ public class PulseRadarFragment extends Fragment{
         }
 
         if(testData)
-            featureProcessor = new TestDataFeatureProcessor(getActivity());
+            featureProcessor = new TestDataFeatureProcessor(this);
         else
-            featureProcessor = new FeatureProcessor(getActivity());
+            featureProcessor = new FeatureProcessor(this);
 
         //TODO: GesturesExtractors as preferences?
+        List<GestureExtractor> gestureExtractors = new Vector<>();
+        gestureExtractors.add(new DownGE());
+        gestureExtractors.add(new UpGE());
+
+        for(GestureExtractor ge : gestureExtractors){
+            if(!isCalibrating) {
+                initializeGEThresholds(ge);
+            }
+            featureProcessor.registerGestureExtractor(ge);
+        }
+
+        updateDebugInfo();
+
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
-        featureProcessor.registerGestureExtractor(new DownUpGE());
+        //featureProcessor.registerGestureExtractor(new DownUpGE());
         //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
 
+    }
+
+    private void updateDebugInfo() {
+        StringBuffer buffer = new StringBuffer();
+        if(featureProcessor != null) {
+            for (GestureExtractor ge : featureProcessor.getGestureExtractors()) {
+                buffer.append(ge.getName() + ": " + ge.getThresholds() + "\n");
+            }
+        }
+
+        if(buffer.length() == 0)
+            debugInfo.setText("No Info on GEs available!\n");
+        else
+            debugInfo.setText(buffer.toString());
+    }
+
+    private boolean initializeGEThresholds(GestureExtractor ge) {
+        try {
+            ObjectInputStream in = new ObjectInputStream(getActivity().openFileInput(ge.getName() + ".calib"));
+            Map<String, Double> thresholds = (HashMap<String, Double>) in.readObject();
+            return ge.setThresholds(thresholds);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (StreamCorruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
 
@@ -645,6 +868,11 @@ public class PulseRadarFragment extends Fragment{
         @Override
         public void onPrepareOptionsMenu(Menu menu) {
             menu.findItem(R.id.action_settings).setVisible(false);
+            menu.findItem(R.id.action_compute_stft).setVisible(false);
+            menu.findItem(R.id.action_show_last).setVisible(false);
+            menu.findItem(R.id.action_test_detection).setVisible(false);
+            menu.findItem(R.id.action_update_debug_info).setVisible(false);
+
         }
 
         public Spectrogram(){

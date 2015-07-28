@@ -1,6 +1,7 @@
 package jakobkarolus.de.pulseradar.features.gestures;
 
 import java.util.List;
+import java.util.Map;
 
 import jakobkarolus.de.pulseradar.features.Feature;
 
@@ -31,4 +32,32 @@ public interface GestureExtractor {
      * @return true if the list corresponds to the gesture; false otherwise
      */
     public boolean calibrate(List<Feature> features);
+
+
+    /**
+     * pretty print of the current used thresholds, for debugging
+     *
+     * @return String containing all thresholds used by this GestureExtractor
+     */
+    public String getThresholds();
+
+    /**
+     *
+     * @return thresholds for this GE as a Map
+     */
+    public Map<String, Double> getThresholdMap();
+
+    /**
+     * sets the internal thresholds for feature detection
+     * @param thresholds a map of threshold name to value
+     * @return whether the thresholds could be applied
+     */
+    public boolean setThresholds(Map<String, Double> thresholds);
+
+    /**
+     *
+     * @return the name of this GestureExtractor
+     */
+    public String getName();
+
 }

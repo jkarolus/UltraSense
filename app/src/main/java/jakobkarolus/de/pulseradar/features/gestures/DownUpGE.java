@@ -2,6 +2,7 @@ package jakobkarolus.de.pulseradar.features.gestures;
 
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.features.Feature;
@@ -46,6 +47,26 @@ public class DownUpGE implements GestureExtractor{
     public boolean calibrate(List<Feature> features) {
         //TODO:implement
         return false;
+    }
+
+    @Override
+    public String getThresholds() {
+        return null;
+    }
+
+    @Override
+    public Map<String, Double> getThresholdMap() {
+        return null;
+    }
+
+    @Override
+    public boolean setThresholds(Map<String, Double> thresholds) {
+        return false;
+    }
+
+    @Override
+    public String getName() {
+        return DownUpGE.class.getSimpleName();
     }
 
     protected boolean isUpGesture(Feature f) {

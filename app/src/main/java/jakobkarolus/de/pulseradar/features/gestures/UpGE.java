@@ -1,8 +1,6 @@
 package jakobkarolus.de.pulseradar.features.gestures;
 
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.features.Feature;
 
@@ -11,32 +9,16 @@ import jakobkarolus.de.pulseradar.features.Feature;
  * <br><br>
  * Created by Jakob on 08.07.2015.
  */
-public class UpGE implements GestureExtractor{
+public class UpGE extends OneMotionGE{
 
-    private double featureLengthMinThr = Double.MAX_VALUE;
-    private double featureLengthMaxThr = Double.MIN_VALUE;
-    private double featureWeightMinThr = Double.MAX_VALUE;
-    private double featureWeightMaxThr = Double.MIN_VALUE;
 
     @Override
-    public List<Gesture> detectGesture(List<Feature> features) {
-        List<Gesture> gestures = new Vector<>();
-        ListIterator<Feature> iter = features.listIterator();
-        while(iter.hasNext()){
-            Feature f = iter.next();
-            if(f.getLength() >= 1.5 && f.getLength() <= 3.5) {
-                if (f.getWeight() <= -60.0) {
-                    gestures.add(Gesture.UP);
-                    iter.remove();
-                }
-            }
-        }
-        return gestures;
+    public Gesture getSpecificGesture() {
+        return Gesture.UP;
     }
 
     @Override
-    public boolean calibrate(List<Feature> features) {
-        //do a sanity check
+    public boolean doSanityCalibrationCheck(List<Feature> features) {
         if(features.size() != 1)
             return false;
 
@@ -44,18 +26,11 @@ public class UpGE implements GestureExtractor{
         if(f.getWeight() >= 0.0)
             return false;
 
-        if(f.getWeight() <= featureWeightMinThr)
-            featureWeightMinThr = f.getWeight();
-
-        if(f.getWeight() >= featureWeightMaxThr)
-            featureWeightMaxThr = f.getWeight();
-
-        if(f.getLength() <= featureLengthMinThr)
-            featureLengthMinThr = f.getWeight();
-
-        if(f.getLength() <= featureLengthMaxThr)
-            featureLengthMaxThr = f.getWeight();
-
         return true;
+    }
+
+    @Override
+    public String getName() {
+        return UpGE.class.getSimpleName();
     }
 }

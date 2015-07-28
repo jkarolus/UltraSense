@@ -1,6 +1,5 @@
 package jakobkarolus.de.pulseradar.features;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
@@ -23,7 +22,7 @@ public class TestDataFeatureProcessor extends FeatureProcessor{
     private List<Feature> extractedFeatures;
 
 
-    public TestDataFeatureProcessor(Activity ctx) {
+    public TestDataFeatureProcessor(PulseRadarFragment ctx) {
         super(ctx);
         this.extractedFeatures = new Vector<>();
     }

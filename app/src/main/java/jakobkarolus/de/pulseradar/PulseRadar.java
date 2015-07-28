@@ -57,6 +57,6 @@ public class PulseRadar extends ActionBarActivity{
             return true;
         }
 
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 }

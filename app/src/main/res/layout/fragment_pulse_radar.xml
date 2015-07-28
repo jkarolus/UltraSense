@@ -1,3 +1,8 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent">
+
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
@@ -76,6 +81,7 @@
         android:id="@+id/info_text"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:layout_below="@id/button_stop_detection"
         android:layout_marginTop="10dp"
         android:text="@string/info"/>
@@ -85,6 +91,7 @@
     android:id="@+id/button_fft"
     android:text="Compute STFT of last record"
     android:enabled="true"
+        android:visibility="gone"
     android:onClick="computeSTFT"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
@@ -94,6 +101,7 @@
     android:id="@+id/button_last_spec"
     android:text="Show last spectrogram"
     android:enabled="true"
+        android:visibility="gone"
     android:onClick="showLastSpec"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
@@ -111,15 +119,47 @@
         android:layout_below="@id/button_test_corr"
         android:id="@+id/button_test_detection"
         android:text="Test Detection"
-        android:visibility="visible"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/button_play_audio"
         android:text="Play Audio"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/button_calibrate"
+        android:text="Calibrate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/text_debug_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
 
 </LinearLayout>
+
+
+    <TextView
+        android:id="@+id/text_countdown"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="3"
+        android:visibility="invisible"
+        android:gravity="center"
+        android:textSize="200sp"
+        android:textStyle="bold"
+        android:textColor="#ffff0000"/>
+
+    <View
+        android:id="@+id/view_calib_recognized"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ff00ff00"
+        android:visibility="invisible"/>
+</FrameLayout>
