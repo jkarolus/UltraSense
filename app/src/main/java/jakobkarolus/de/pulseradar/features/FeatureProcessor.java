@@ -67,6 +67,10 @@ public class FeatureProcessor {
         return this.gestureExtractors;
     }
 
+    public GestureExtractor getCalibrator(){
+        return this.calibrator;
+    }
+
     public String[] getGestureExtractorNames(){
         String[] names = new String[gestureExtractors.size()];
         for(int i=0; i < gestureExtractors.size(); i++)
@@ -112,6 +116,7 @@ public class FeatureProcessor {
 
     public void startCalibrating(GestureExtractor ge){
         this.calibrator = ge;
+        this.calibrator.resetThresholds();
         calibrationRuns = 0;
         isCalibrating = true;
         Thread thread = new Thread(new Runnable() {
@@ -175,6 +180,7 @@ public class FeatureProcessor {
 
         if(isCalibrating && calibrationRuns >= MAX_CALIBRATION_RUNS){
             ctx.onCalibrationFinished(calibrator.getThresholds(), calibrator.getName());
+            isCalibrating = false;
             //save data internally to access during later detection
             new Thread(new Runnable() {
                 @Override

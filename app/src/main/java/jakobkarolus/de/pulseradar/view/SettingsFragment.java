@@ -31,6 +31,7 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
 
     public static final String KEY_CW_FREQ = "pref_key_cw_freq";
 
+    public static final String KEY_USE_PRECALIBRATION = "pref_key_use_precalibration";
     public static final String KEY_FFT_LENGTH = "pref_key_fft_length";
     public static final String KEY_HOPSIZE = "pref_key_hopsize";
     public static final String KEY_HALF_CARRIER_WIDTH = "pref_key_halfCarrierWidth";

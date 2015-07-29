@@ -60,4 +60,14 @@ public interface GestureExtractor {
      */
     public String getName();
 
+    /**
+     * called during calibration to reset the previous thresholds
+     */
+    public void resetThresholds();
+
+    /**
+     *
+     * @return the subclass specific Gesture from the enum
+     */
+    public Gesture getSpecificGesture();
 }

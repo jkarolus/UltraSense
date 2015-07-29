@@ -29,6 +29,7 @@ public abstract class OneMotionGE implements GestureExtractor{
     private double featureWeightMinThr = Double.MAX_VALUE;
     private double featureWeightMaxThr = -Double.MAX_VALUE;
 
+
     private DecimalFormat df = new DecimalFormat("0.0000E0");
 
     @Override
@@ -60,12 +61,6 @@ public abstract class OneMotionGE implements GestureExtractor{
         }
         return gestures;
     }
-
-    /**
-     *
-     * @return the subclass specific Gesture from the enum
-     */
-    public abstract Gesture getSpecificGesture();
 
     /**
      * sanity check for subclass specific gestures during calibration (e.g. high doppler -> down feature)
@@ -115,5 +110,29 @@ public abstract class OneMotionGE implements GestureExtractor{
         map.put(WEIGHT_MIN, featureWeightMinThr);
         map.put(WEIGHT_MAX, featureWeightMaxThr);
         return map;
+    }
+
+    @Override
+    public void resetThresholds() {
+        featureLengthMinThr = Double.MAX_VALUE;
+        featureLengthMaxThr = -Double.MAX_VALUE;
+        featureWeightMinThr = Double.MAX_VALUE;
+        featureWeightMaxThr = -Double.MAX_VALUE;
+    }
+
+    protected void setFeatureLengthMinThr(double featureLengthMinThr) {
+        this.featureLengthMinThr = featureLengthMinThr;
+    }
+
+    protected void setFeatureLengthMaxThr(double featureLengthMaxThr) {
+        this.featureLengthMaxThr = featureLengthMaxThr;
+    }
+
+    protected void setFeatureWeightMinThr(double featureWeightMinThr) {
+        this.featureWeightMinThr = featureWeightMinThr;
+    }
+
+    protected void setFeatureWeightMaxThr(double featureWeightMaxThr) {
+        this.featureWeightMaxThr = featureWeightMaxThr;
     }
 }

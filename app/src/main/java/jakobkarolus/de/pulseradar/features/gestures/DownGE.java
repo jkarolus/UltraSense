@@ -11,6 +11,21 @@ import jakobkarolus.de.pulseradar.features.Feature;
  */
 public class DownGE extends OneMotionGE{
 
+
+    private static final double LENGTH_MIN = 0.08;
+    private static final double LENGTH_MAX = 0.18;
+    private static final double WEIGHT_MIN = 2.1;
+    private static final double WEIGHT_MAX = 5.1;
+
+
+    public DownGE(){
+        setFeatureLengthMinThr(LENGTH_MIN);
+        setFeatureLengthMaxThr(LENGTH_MAX);
+        setFeatureWeightMinThr(WEIGHT_MIN);
+        setFeatureWeightMaxThr(WEIGHT_MAX);
+
+    }
+
     @Override
     public Gesture getSpecificGesture() {
         return Gesture.DOWN;

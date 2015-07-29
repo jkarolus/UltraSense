@@ -11,6 +11,20 @@ import jakobkarolus.de.pulseradar.features.Feature;
  */
 public class UpGE extends OneMotionGE{
 
+    private static final double LENGTH_MIN = 0.1;
+    private static final double LENGTH_MAX = 0.21;
+    private static final double WEIGHT_MIN = -5.1;
+    private static final double WEIGHT_MAX = -2.1;
+
+
+    public UpGE(){
+        setFeatureLengthMinThr(LENGTH_MIN);
+        setFeatureLengthMaxThr(LENGTH_MAX);
+        setFeatureWeightMinThr(WEIGHT_MIN);
+        setFeatureWeightMaxThr(WEIGHT_MAX);
+
+    }
+
 
     @Override
     public Gesture getSpecificGesture() {

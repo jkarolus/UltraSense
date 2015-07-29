@@ -1,101 +1,42 @@
 package jakobkarolus.de.pulseradar.features.gestures;
 
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Vector;
-
-import jakobkarolus.de.pulseradar.features.Feature;
-
 /**
- * Created by Jakob on 08.07.2015.
+ * Wave-like gesture performing first a Down then an Up gesture
+ * <br><br>
+ * Created by Jakob on 29.07.2015.
  */
-public class DownUpGE implements GestureExtractor{
+public class DownUpGE extends TwoMotionGE{
 
-    //fast: 0.3 <-> 0.4
-    //slow: 0.4 <-> 0.6
-    private static final double UP_DOWN_THRESHOLD_HIGH = 0.6;
-    private static final double UP_DOWN_THRESHOLD_LOW = 0.3;
+    private static final double F1_LENGTH_MIN = 0.08;
+    private static final double F1_LENGTH_MAX = 0.18;
+    private static final double F1_WEIGHT_MIN = 2.8;
+    private static final double F1_WEIGHT_MAX = 4.7;
+
+    private static final double F2_LENGTH_MIN = 0.08;
+    private static final double F2_LENGTH_MAX = 1.9;
+    private static final double F2_WEIGHT_MIN = -4.8;
+    private static final double F2_WEIGHT_MAX = -3.1;
+
+    private static final double TIME_DIST_MIN = 0.34;
+    private static final double TIME_DIST_MAX = 0.63;
 
 
-    @Override
-    public List<Gesture> detectGesture(List<Feature> features) {
-        List<Gesture> gestures = new Vector<>();
-        ListIterator<Feature> iter = features.listIterator();
-        while(iter.hasNext()){
-            Feature f = iter.next();
-            if(isDownGesture(f)){
-                if(iter.hasNext()){
-                    Feature next = iter.next();
-                    if(isUpGesture(next)){
-                        //check if they are close enough
-                        double distance = next.getTime()-f.getTime();
-                        if(distance <= getHighThreshold() && distance >= getLowThreshold()){
-                            gestures.add(getGesture());
-                            iter.remove();
-                            iter.previous();
-                            iter.remove();
-                        }
-                    }
-                }
-            }
-        }
-        return gestures;
+    public DownUpGE(){
+
+        setFeatureOneThresholds(new FeatureThresholds(F1_LENGTH_MIN, F1_LENGTH_MAX, F1_WEIGHT_MIN, F1_WEIGHT_MAX));
+        setFeatureTwoThresholds(new FeatureThresholds(F2_LENGTH_MIN, F2_LENGTH_MAX, F2_WEIGHT_MIN, F2_WEIGHT_MAX));
+        setFeatureTimeDistanceMinThr(TIME_DIST_MIN);
+        setFeatureTimeDistanceMaxThr(TIME_DIST_MAX);
     }
 
-    @Override
-    public boolean calibrate(List<Feature> features) {
-        //TODO:implement
-        return false;
-    }
-
-    @Override
-    public String getThresholds() {
-        return null;
-    }
-
-    @Override
-    public Map<String, Double> getThresholdMap() {
-        return null;
-    }
-
-    @Override
-    public boolean setThresholds(Map<String, Double> thresholds) {
-        return false;
-    }
 
     @Override
     public String getName() {
         return DownUpGE.class.getSimpleName();
     }
 
-    protected boolean isUpGesture(Feature f) {
-        if(f.getLength() >= 0.05 && f.getLength() <= 0.16) {
-            if (f.getWeight() >= -4.5 && f.getWeight() <= -2.5) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected boolean isDownGesture(Feature f) {
-        if(f.getLength() >= 0.05 && f.getLength() <= 0.16) {
-            if (f.getWeight() >= 2.5 && f.getWeight() <= 4.5) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected double getHighThreshold(){
-        return UP_DOWN_THRESHOLD_HIGH;
-    }
-
-    protected double getLowThreshold(){
-        return UP_DOWN_THRESHOLD_LOW;
-    }
-
-    protected Gesture getGesture(){
+    @Override
+    public Gesture getSpecificGesture() {
         return Gesture.DOWN_UP;
     }
 }

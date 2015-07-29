@@ -58,9 +58,9 @@ import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
-import jakobkarolus.de.pulseradar.features.gestures.DownGE;
+import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
-import jakobkarolus.de.pulseradar.features.gestures.UpGE;
+import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -91,6 +91,7 @@ public class PulseRadarFragment extends Fragment{
     private View calibVisualFeedbackView;
     private View rootView;
     private TextView debugInfo;
+    private boolean usePreCalibration=true;
 
     private MediaPlayer mp;
     private FeatureProcessor featureProcessor;
@@ -640,6 +641,7 @@ public class PulseRadarFragment extends Fragment{
                 double lowFeatureThr = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_LOW_FEAT_THRESHOLD, ""));
                 int slackWidth = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_FEAT_SLACK, ""));
                 double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
+                usePreCalibration = sharedPreferences.getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
 
                 featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength));
             }
@@ -658,13 +660,14 @@ public class PulseRadarFragment extends Fragment{
 
         //TODO: GesturesExtractors as preferences?
         List<GestureExtractor> gestureExtractors = new Vector<>();
-        gestureExtractors.add(new DownGE());
-        gestureExtractors.add(new UpGE());
+        //gestureExtractors.add(new DownGE());
+        //gestureExtractors.add(new UpGE());
+        gestureExtractors.add(new DownUpGE());
+        gestureExtractors.add(new SwipeGE());
 
         for(GestureExtractor ge : gestureExtractors){
-            if(!isCalibrating) {
+            if(!usePreCalibration)
                 initializeGEThresholds(ge);
-            }
             featureProcessor.registerGestureExtractor(ge);
         }
 
@@ -672,7 +675,7 @@ public class PulseRadarFragment extends Fragment{
 
         //featureProcessor.registerGestureExtractor(new DownGE());
         //featureProcessor.registerGestureExtractor(new UpGE());
-        //featureProcessor.registerGestureExtractor(new DownUpGE());
+        //featureProcessor.registerGestureExtractor(new TwoMotionGE());
         //featureProcessor.registerGestureExtractor(new SwipeGE());
         featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
