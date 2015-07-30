@@ -123,12 +123,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <Button
-        android:id="@+id/button_play_audio"
-        android:text="Play Audio"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/button_calibrate"

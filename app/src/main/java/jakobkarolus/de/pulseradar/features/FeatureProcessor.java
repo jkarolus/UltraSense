@@ -1,15 +1,10 @@
 package jakobkarolus.de.pulseradar.features;
 
-import android.app.Activity;
-import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.ListIterator;
@@ -17,6 +12,7 @@ import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
+import jakobkarolus.de.pulseradar.view.GestureRecognizer;
 import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
@@ -34,7 +30,7 @@ public class FeatureProcessor {
 
     private List<Feature> features;
     private List<GestureExtractor> gestureExtractors;
-    private PulseRadarFragment ctx;
+    private GestureRecognizer gestureCallback;
     private FileWriter featWriter;
     private double currentFeatureTime;
     private int calibrationRuns;
@@ -43,8 +39,8 @@ public class FeatureProcessor {
     private FileWriter calibWriter;
     private DecimalFormat df = new DecimalFormat("0.0000E0");
 
-    public FeatureProcessor(PulseRadarFragment ctx){
-        this.ctx = ctx;
+    public FeatureProcessor(GestureRecognizer gestureCallback){
+        this.gestureCallback = gestureCallback;
         features = new Vector<>();
         gestureExtractors = new Vector<>();
         isCalibrating = false;
@@ -144,26 +140,15 @@ public class FeatureProcessor {
 
         if(isCalibrating && calibrationRuns < MAX_CALIBRATION_RUNS && calibrator != null){
             boolean calibrated = calibrator.calibrate(features);
-            final String text;
-            if(calibrated)
-                text = "Successfully used for calibration";
-            else
-                text = "Feature does not match Gesture characteristics";
+
             if(!calibrated)
                 features.clear();
             if(calibrated) {
                 calibrationRuns++;
             }
             if(calibrationRuns < MAX_CALIBRATION_RUNS)
-                ctx.onCalibrationStep(calibrated);
+                gestureCallback.onCalibrationStep(calibrated);
 
-
-            ctx.getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(ctx.getActivity(), text, Toast.LENGTH_SHORT).show();
-                }
-            });
 
             Thread thread = new Thread(new Runnable() {
                 @Override
@@ -179,24 +164,8 @@ public class FeatureProcessor {
         }
 
         if(isCalibrating && calibrationRuns >= MAX_CALIBRATION_RUNS){
-            ctx.onCalibrationFinished(calibrator.getThresholds(), calibrator.getName());
+            gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
             isCalibrating = false;
-            //save data internally to access during later detection
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ObjectOutputStream out = new ObjectOutputStream(ctx.getActivity().openFileOutput(calibrator.getName() + ".calib", Context.MODE_PRIVATE));
-                        out.writeObject(calibrator.getThresholdMap());
-                        out.flush();
-                        out.close();
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
         }
 
         else {
@@ -204,12 +173,7 @@ public class FeatureProcessor {
                 final List<Gesture> gestures = ge.detectGesture(features);
                 for (final Gesture g : gestures) {
                     Log.i("GESTURE", g.toString());
-                    ctx.getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(ctx.getActivity(), g.toString(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                    gestureCallback.onGestureDetected(g);
                 }
             }
 
@@ -222,11 +186,11 @@ public class FeatureProcessor {
         StringBuffer buffer = new StringBuffer();
         for(Feature f : features){
             if(f.getWeight() >= 0.0)
-                buffer.append("H ");
+                buffer.append("H");
             else
-                buffer.append("L ");
+                buffer.append("L");
         }
-        return buffer.toString();
+        return buffer.reverse().toString();
     }
 
     private void cleanUpFeatureStack() {
@@ -242,9 +206,5 @@ public class FeatureProcessor {
             }
             Log.i("GESTURE_GC", "Removed " + (sizeBefore - features.size()) + " features from the stack");
         }
-    }
-
-    public Activity getActivity(){
-        return ctx.getActivity();
     }
 }

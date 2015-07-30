@@ -1,5 +1,6 @@
 package jakobkarolus.de.pulseradar.features;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
@@ -11,6 +12,7 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.R;
+import jakobkarolus.de.pulseradar.view.GestureRecognizer;
 import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
@@ -21,9 +23,11 @@ public class TestDataFeatureProcessor extends FeatureProcessor{
 
     private List<Feature> extractedFeatures;
 
+    private Activity ctx;
 
-    public TestDataFeatureProcessor(PulseRadarFragment ctx) {
-        super(ctx);
+    public TestDataFeatureProcessor(GestureRecognizer gestureCallback, Activity ctx) {
+        super(gestureCallback);
+        this.ctx = ctx;
         this.extractedFeatures = new Vector<>();
     }
 
@@ -53,7 +57,7 @@ public class TestDataFeatureProcessor extends FeatureProcessor{
     }
 
     private void compareFeatures(List<Feature> testFeatures, List<Feature> extractedFeatures) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
         builder.setTitle("Feature comparison report");
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {

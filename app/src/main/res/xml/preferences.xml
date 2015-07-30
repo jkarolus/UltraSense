@@ -48,7 +48,7 @@
         <EditTextPreference
             android:key="pref_key_db_threshold"
             android:title="@string/pref_key_db_threshold"
-            android:defaultValue="-60.0"
+            android:defaultValue="-55.0"
             android:inputType="numberDecimal" />
 
         <EditTextPreference

@@ -10,10 +10,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -37,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
 import java.util.HashMap;
 import java.util.List;
@@ -59,13 +58,14 @@ import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
 import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
+import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
 import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
  */
-public class PulseRadarFragment extends Fragment{
+public class PulseRadarFragment extends Fragment implements GestureRecognizer{
 
     private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
     private Bitmap lastSpectrogram;
@@ -83,9 +83,7 @@ public class PulseRadarFragment extends Fragment{
 
     private Button computeStftButton;
     private Button showLastSpec;
-    private Button playAudioButton;
     private Button calibrateButton;
-    private Button applyCorrelationCorrection;
     private Button testDetection;
     private TextView countDownView;
     private View calibVisualFeedbackView;
@@ -93,7 +91,6 @@ public class PulseRadarFragment extends Fragment{
     private TextView debugInfo;
     private boolean usePreCalibration=true;
 
-    private MediaPlayer mp;
     private FeatureProcessor featureProcessor;
 
 
@@ -115,9 +112,7 @@ public class PulseRadarFragment extends Fragment{
         stopDetectionButton = (Button) rootView.findViewById(R.id.button_stop_detection);
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
-        applyCorrelationCorrection = (Button) rootView.findViewById(R.id.button_test_corr);
         testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
-        playAudioButton = (Button) rootView.findViewById(R.id.button_play_audio);
         calibrateButton = (Button) rootView.findViewById(R.id.button_calibrate);
         countDownView = (TextView) rootView.findViewById(R.id.text_countdown);
         calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
@@ -168,28 +163,12 @@ public class PulseRadarFragment extends Fragment{
                 showLastSpec();
             }
         });
-        applyCorrelationCorrection.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                applyCorrelationCorrection();
-            }
-        });
         testDetection.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
                     testDetection();
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        playAudioButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    playAudio();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -252,6 +231,7 @@ public class PulseRadarFragment extends Fragment{
 
     }
 
+    @Override
     public void onCalibrationStep(final boolean successful){
 
         getActivity().runOnUiThread(new Runnable() {
@@ -287,53 +267,6 @@ public class PulseRadarFragment extends Fragment{
                 }, 200, 100);
             }
         });
-    }
-
-
-    private void playAudio() throws IOException {
-
-        if(mp == null) {
-
-            /*
-            try {
-                Class audioSystemClass = Class.forName("android.media.AudioSystem");
-                Method setForceUse = audioSystemClass.getMethod("setForceUse", int.class, int.class);
-                setForceUse.invoke(null, 1, 2);
-                setForceUse.invoke(null, 0, 1);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-            */
-
-            android.media.AudioManager am = (android.media.AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
-            //am.setSpeakerphoneOn(true);
-
-            playAudioButton.setText("Stop Audio");
-            //mp = MediaPlayer.create(getActivity(), R.raw.enter_sandman);
-            //mp.start();
-            int streamMusic = android.media.AudioManager.STREAM_MUSIC;
-            mp = new MediaPlayer();
-            mp.setAudioStreamType(streamMusic);
-            AssetFileDescriptor afd = getActivity().getResources().openRawResourceFd(R.raw.enter_sandman);
-            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            afd.close();
-            mp.prepare();
-            mp.start();
-
-        }
-        else{
-            mp.stop();
-            mp.release();
-            mp = null;
-            playAudioButton.setText("Play Audio");
-        }
-
     }
 
     private void stopDetection() {
@@ -373,7 +306,8 @@ public class PulseRadarFragment extends Fragment{
 
     }
 
-    public void onCalibrationFinished(final String thresholds, final String name) {
+    @Override
+    public void onCalibrationFinished(final Map<String, Double> thresholds, final String prettyPrintThresholds, final String name) {
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -398,10 +332,39 @@ public class PulseRadarFragment extends Fragment{
                         // User clicked OK button
                     }
                 });
-                builder.setMessage(thresholds);
+                builder.setMessage(prettyPrintThresholds);
                 builder.show();
             }
         });
+
+        //save data internally to access during later detection
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ObjectOutputStream out = new ObjectOutputStream(getActivity().openFileOutput(name + ".calib", Context.MODE_PRIVATE));
+                    out.writeObject(thresholds);
+                    out.flush();
+                    out.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    @Override
+    public void onGestureDetected(final Gesture gesture) {
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getActivity(), gesture.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
     }
 
     private class TestDetectionTask extends AsyncTask<Void, String, Void> {
@@ -460,55 +423,6 @@ public class PulseRadarFragment extends Fragment{
             }
             catch(IOException e){
                 e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    private void applyCorrelationCorrection() {
-
-        if(audioManager.hasRecordData()){
-            new ApplyCorrelationCorrectionTask().execute();
-        }
-        else{
-            Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
-        }
-
-    }
-
-
-    private class ApplyCorrelationCorrectionTask extends AsyncTask<Void, String, Void> {
-
-        private ProgressDialog pd;
-
-        @Override
-        protected void onPreExecute() {
-            pd = ProgressDialog.show(getActivity(), "Calculating Correlation", "Please wait", true, false);
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            pd.setMessage(values[0]);
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            pd.dismiss();
-
-            //TODO: save the newly corrected data
-        }
-
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            double[] signal1 = audioManager.getSentData();
-            double[] signal2 = audioManager.getRecordData(false);
-            if(signal1.length != 0 || signal2.length != 0) {
-
-
-                //TODO: scale the data
-                double[] xcorr = AlgoHelper.xcorr(signal1, signal2);
-                saveDataToFile("correlation", xcorr);
             }
             return null;
         }
@@ -654,7 +568,7 @@ public class PulseRadarFragment extends Fragment{
         }
 
         if(testData)
-            featureProcessor = new TestDataFeatureProcessor(this);
+            featureProcessor = new TestDataFeatureProcessor(this, getActivity());
         else
             featureProcessor = new FeatureProcessor(this);
 
