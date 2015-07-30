@@ -1,5 +1,9 @@
 package jakobkarolus.de.pulseradar.features.gestures;
 
+import java.util.List;
+
+import jakobkarolus.de.pulseradar.features.Feature;
+
 /**
  * handles swipes gestures above the phone
  * <br><br>
@@ -38,5 +42,25 @@ public class SwipeGE extends TwoMotionGE{
     @Override
     public Gesture getSpecificGesture() {
         return Gesture.SWIPE;
+    }
+
+    @Override
+    public boolean doSanityCalibrationCheck(List<Feature> features) {
+
+        if(features.size() == 1) {
+            //the first feature has to be a down feature
+            Feature f = features.get(0);
+            if (f.getWeight() >= 0.0)
+                return true;
+        }
+
+        if(features.size() == 2){
+            Feature f1 = features.get(0);
+            Feature f2 = features.get(1);
+            if (f1.getWeight() >= 0.0 && f2.getWeight() <= 0.0)
+                return true;
+        }
+
+        return false;
     }
 }

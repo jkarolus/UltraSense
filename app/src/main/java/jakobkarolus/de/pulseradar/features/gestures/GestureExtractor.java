@@ -70,4 +70,11 @@ public interface GestureExtractor {
      * @return the subclass specific Gesture from the enum
      */
     public Gesture getSpecificGesture();
+
+    /**
+     * sanity check for subclass specific gestures during calibration (e.g. high doppler -> down feature)
+     * @param features the feature list
+     * @return true if feature is possible; otherwise false (e.g. low doppler and down feature)
+     */
+    public abstract boolean doSanityCalibrationCheck(List<Feature> features);
 }

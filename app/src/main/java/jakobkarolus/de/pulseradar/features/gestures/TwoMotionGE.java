@@ -71,8 +71,58 @@ public abstract class TwoMotionGE implements GestureExtractor{
 
     @Override
     public CalibrationState calibrate(List<Feature> features) {
-        //TODO:implement
-        return CalibrationState.SUCCESSFUL;
+
+        boolean sanityCheck = doSanityCalibrationCheck(features);
+        if(!sanityCheck) {
+            features.clear();
+            return CalibrationState.FAILED;
+        }
+
+        if(features.size()==1){
+            //it's the first feature, "ignore" to keep on stack and wait for the second
+            return CalibrationState.ONGOING;
+        }
+
+        if(features.size() == 2){
+            //sanity is already checked, use the two feature to updat thresholds
+            Feature f1 = features.get(0);
+            Feature f2 = features.get(1);
+            updateFeatureThresholds(featureOneThresholds, f1);
+            updateFeatureThresholds(featureTwoThresholds, f2);
+            updateTimeDistance(f1.getTime(), f2.getTime());
+            features.clear();
+            return CalibrationState.SUCCESSFUL;
+
+        }
+
+        //cant fit a two motion gesture
+        return CalibrationState.FAILED;
+    }
+
+    private void updateTimeDistance(double featureOneTime, double featureTwoTime) {
+
+        double dist = featureTwoTime - featureOneTime;
+        if(dist <= featureTimeDistanceMinThr)
+            featureTimeDistanceMinThr = dist;
+        if(dist >= featureTimeDistanceMaxThr)
+            featureTimeDistanceMaxThr = dist;
+
+    }
+
+    private void updateFeatureThresholds(FeatureThresholds ft, Feature f){
+
+        if(f.getLength() <= ft.getFeatureLengthMinThr())
+            ft.setFeatureLengthMinThr(f.getLength());
+
+        if(f.getLength() >= ft.getFeatureLengthMaxThr())
+            ft.setFeatureLengthMaxThr(f.getLength());
+
+        if(f.getWeight() <= ft.getFeatureWeightMinThr())
+            ft.setFeatureWeightMinThr(f.getWeight());
+
+        if(f.getWeight() >= ft.getFeatureWeightMaxThr())
+            ft.setFeatureWeightMaxThr(f.getWeight());
+
     }
 
     @Override
@@ -82,7 +132,7 @@ public abstract class TwoMotionGE implements GestureExtractor{
         buffer.append("FirstLength: " + df.format(featureOneThresholds.getFeatureLengthMinThr()) + " <-> " + df.format(featureOneThresholds.getFeatureLengthMaxThr()));
         buffer.append("; FirstWeight: " + df.format(featureOneThresholds.getFeatureWeightMinThr()) + " <-> " + df.format(featureOneThresholds.getFeatureWeightMaxThr()));
         buffer.append("; SecondLength: " + df.format(featureTwoThresholds.getFeatureLengthMinThr()) + " <-> " + df.format(featureTwoThresholds.getFeatureLengthMaxThr()));
-        buffer.append("; SecondtWeight: " + df.format(featureTwoThresholds.getFeatureWeightMinThr()) + " <-> " + df.format(featureTwoThresholds.getFeatureWeightMaxThr()));
+        buffer.append("; SecondWeight: " + df.format(featureTwoThresholds.getFeatureWeightMinThr()) + " <-> " + df.format(featureTwoThresholds.getFeatureWeightMaxThr()));
         buffer.append("; Time Dist.: " + df.format(featureTimeDistanceMinThr) + " <-> " + df.format(featureTimeDistanceMaxThr) + "\n");
         return buffer.toString();
     }
@@ -98,8 +148,8 @@ public abstract class TwoMotionGE implements GestureExtractor{
     }
 
     private void getThresholdsForMap(String identifier, FeatureThresholds ft, Map<String, Double> map) {
-        map.put(identifier+FeatureThresholds.LENGTH_MIN, ft.getFeatureLengthMinThr());
-        map.put(identifier+FeatureThresholds.LENGTH_MAX, ft.getFeatureLengthMaxThr());
+        map.put(identifier + FeatureThresholds.LENGTH_MIN, ft.getFeatureLengthMinThr());
+        map.put(identifier + FeatureThresholds.LENGTH_MAX, ft.getFeatureLengthMaxThr());
         map.put(identifier+FeatureThresholds.WEIGHT_MIN, ft.getFeatureWeightMinThr());
         map.put(identifier+FeatureThresholds.WEIGHT_MAX, ft.getFeatureWeightMaxThr());
 

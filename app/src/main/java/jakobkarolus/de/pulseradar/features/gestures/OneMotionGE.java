@@ -62,13 +62,6 @@ public abstract class OneMotionGE implements GestureExtractor{
         return gestures;
     }
 
-    /**
-     * sanity check for subclass specific gestures during calibration (e.g. high doppler -> down feature)
-     * @param features the feature list
-     * @return true if feature is possible; otherwise false (e.g. low doppler and down feature)
-     */
-    public abstract boolean doSanityCalibrationCheck(List<Feature> features);
-
 
     @Override
     public CalibrationState calibrate(List<Feature> features) {
