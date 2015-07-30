@@ -29,9 +29,9 @@ public interface GestureExtractor {
      * whether they used the stack for calibration
      *
      * @param features the current List of detected features
-     * @return true if the list corresponds to the gesture; false otherwise
+     * @return CalibrationState indicating the state of the calibration
      */
-    public boolean calibrate(List<Feature> features);
+    public CalibrationState calibrate(List<Feature> features);
 
 
     /**

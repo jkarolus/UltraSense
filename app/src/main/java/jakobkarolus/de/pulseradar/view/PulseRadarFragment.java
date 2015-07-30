@@ -57,10 +57,10 @@ import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
-import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
+import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
+import jakobkarolus.de.pulseradar.features.gestures.DownGE;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
-import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -232,7 +232,7 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
     }
 
     @Override
-    public void onCalibrationStep(final boolean successful){
+    public void onCalibrationStep(final CalibrationState calibState){
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -245,12 +245,20 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
                 audioManager.stopDetection();
 
 
-                if (successful)
+                if (calibState == CalibrationState.SUCCESSFUL) {
                     calibVisualFeedbackView.setBackgroundColor(Color.GREEN);
-                else
-                    calibVisualFeedbackView.setBackgroundColor(Color.RED);
+                    calibVisualFeedbackView.setVisibility(View.VISIBLE);
 
-                calibVisualFeedbackView.setVisibility(View.VISIBLE);
+                }
+                else if(calibState == CalibrationState.FAILED) {
+                    calibVisualFeedbackView.setBackgroundColor(Color.RED);
+                    calibVisualFeedbackView.setVisibility(View.VISIBLE);
+                }
+                else{
+                    calibVisualFeedbackView.setBackgroundColor(Color.YELLOW);
+                    calibVisualFeedbackView.setVisibility(View.VISIBLE);
+                }
+
                 final Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
@@ -574,10 +582,10 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
 
         //TODO: GesturesExtractors as preferences?
         List<GestureExtractor> gestureExtractors = new Vector<>();
-        //gestureExtractors.add(new DownGE());
+        gestureExtractors.add(new DownGE());
         //gestureExtractors.add(new UpGE());
-        gestureExtractors.add(new DownUpGE());
-        gestureExtractors.add(new SwipeGE());
+        //gestureExtractors.add(new DownUpGE());
+        //gestureExtractors.add(new SwipeGE());
 
         for(GestureExtractor ge : gestureExtractors){
             if(!usePreCalibration)

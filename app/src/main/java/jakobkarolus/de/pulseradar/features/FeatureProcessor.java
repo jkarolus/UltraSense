@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
 
+import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
 import jakobkarolus.de.pulseradar.view.GestureRecognizer;
@@ -26,6 +27,7 @@ public class FeatureProcessor {
 
     private static final String TAG = "GESTURE";
     private static final double TIME_THRESHOLD = 5.0;
+    private static final double CALIBRATION_TIME_THRESHOLD = 2.0;
     private static final int MAX_CALIBRATION_RUNS = 5;
 
     private List<Feature> features;
@@ -45,6 +47,7 @@ public class FeatureProcessor {
         gestureExtractors = new Vector<>();
         isCalibrating = false;
         calibrationRuns = 0;
+        currentFeatureTime = 0.0;
     }
 
     public void registerGestureExtractor(GestureExtractor ge){
@@ -132,42 +135,56 @@ public class FeatureProcessor {
 
     public void processFeature(final Feature feature){
 
+        //save the current feature time to clean up the stack if necessary
         currentFeatureTime = feature.getTime();
         saveFeatureToFile(feature);
         Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
         features.add(feature);
         Log.i("FEATURE_STACK", printFeatureStack());
 
-        if(isCalibrating && calibrationRuns < MAX_CALIBRATION_RUNS && calibrator != null){
-            boolean calibrated = calibrator.calibrate(features);
+        //calibration ongoing
+        if(isCalibrating && calibrator != null){
 
-            if(!calibrated)
+            //it can happen that we have another feature "in-line" waiting (e.g. a small up motion after a down swing)
+            //-> we gotta ignore this, or it will lead to an unsuccessful calibration step irritating the user
+            //TODO
+            /*
+            if((feature.getTime() - currentFeatureTime) < CALIBRATION_TIME_THRESHOLD || !(Math.abs(currentFeatureTime - 0.0) < 1e-6)) {
                 features.clear();
-            if(calibrated) {
-                calibrationRuns++;
+                return;
             }
-            if(calibrationRuns < MAX_CALIBRATION_RUNS)
-                gestureCallback.onCalibrationStep(calibrated);
+            */
 
+            if(calibrationRuns < MAX_CALIBRATION_RUNS){
+                CalibrationState calibState = calibrator.calibrate(features);
 
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        calibWriter.write(calibrator.getThresholds());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                if(calibState == CalibrationState.SUCCESSFUL) {
+                    calibrationRuns++;
                 }
-            });
-            thread.start();
+                if(calibrationRuns < MAX_CALIBRATION_RUNS)
+                    gestureCallback.onCalibrationStep(calibState);
+
+
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            calibWriter.write(calibrator.getThresholds());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                thread.start();
+            }
+            else{
+                //calibration finished
+                gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
+                isCalibrating = false;
+            }
         }
 
-        if(isCalibrating && calibrationRuns >= MAX_CALIBRATION_RUNS){
-            gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
-            isCalibrating = false;
-        }
-
+        //normal detection
         else {
             for (GestureExtractor ge : gestureExtractors) {
                 final List<Gesture> gestures = ge.detectGesture(features);
@@ -176,7 +193,6 @@ public class FeatureProcessor {
                     gestureCallback.onGestureDetected(g);
                 }
             }
-
             cleanUpFeatureStack();
         }
 
@@ -190,7 +206,7 @@ public class FeatureProcessor {
             else
                 buffer.append("L");
         }
-        return buffer.reverse().toString();
+        return buffer.toString();
     }
 
     private void cleanUpFeatureStack() {

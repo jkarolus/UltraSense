@@ -71,11 +71,13 @@ public abstract class OneMotionGE implements GestureExtractor{
 
 
     @Override
-    public boolean calibrate(List<Feature> features) {
+    public CalibrationState calibrate(List<Feature> features) {
 
         boolean sanityCheck = doSanityCalibrationCheck(features);
-        if(!sanityCheck)
-            return false;
+        if(!sanityCheck) {
+            features.clear();
+            return CalibrationState.FAILED;
+        }
 
         //oneMotion gesture only have one feature
         Feature f = features.get(0);
@@ -94,7 +96,7 @@ public abstract class OneMotionGE implements GestureExtractor{
         //consume feature
         features.clear();
 
-        return true;
+        return CalibrationState.SUCCESSFUL;
     }
 
     @Override

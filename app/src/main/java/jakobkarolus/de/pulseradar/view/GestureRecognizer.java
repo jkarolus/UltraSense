@@ -2,6 +2,7 @@ package jakobkarolus.de.pulseradar.view;
 
 import java.util.Map;
 
+import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 
 /**
@@ -13,9 +14,9 @@ public interface GestureRecognizer {
 
     /**
      * callback during a multiple-step calibration
-     * @param successful whether the current feature was used for calibration
+     * @param calibState the state of the calibration (e.g. ongoing when calibrated "double" Doppler gestures (swipe))
      */
-    public void onCalibrationStep(final boolean successful);
+    public void onCalibrationStep(final CalibrationState calibState);
 
 
     /**

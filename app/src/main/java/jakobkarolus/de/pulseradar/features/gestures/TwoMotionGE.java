@@ -70,9 +70,9 @@ public abstract class TwoMotionGE implements GestureExtractor{
     }
 
     @Override
-    public boolean calibrate(List<Feature> features) {
+    public CalibrationState calibrate(List<Feature> features) {
         //TODO:implement
-        return true;
+        return CalibrationState.SUCCESSFUL;
     }
 
     @Override
