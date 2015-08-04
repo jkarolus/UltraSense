@@ -26,7 +26,10 @@
     <string name="pref_key_feat_high_threshold">High Feature Treshold</string>
     <string name="pref_key_feat_low_threshold">Low Feature Threshold</string>
     <string name="pref_key_feat_slack">Feature Slack width</string>
-    <string name="button_start_detection">Start Detection</string>
-    <string name="button_stop_detection">Stop Detection</string>
+    <string name="button_start_detection">Start Gesture Detection</string>
+    <string name="button_stop_detection">Stop Gesture Detection</string>
     <string name="pref_key_use_precalibration">Use pre-calibrated values</string>
+    <string name="button_start_activity_detection">Start Activity Detection</string>
+    <string name="button_stop_activity_detection">Stop Activity Detection</string>
+
 </resources>

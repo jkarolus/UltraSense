@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,21 +52,26 @@ import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 import jakobkarolus.de.pulseradar.audio.AudioManager;
+import jakobkarolus.de.pulseradar.features.ActivityFP;
 import jakobkarolus.de.pulseradar.features.DummyFeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureDetector;
-import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
+import jakobkarolus.de.pulseradar.features.GestureFP;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
-import jakobkarolus.de.pulseradar.features.TestDataFeatureProcessor;
+import jakobkarolus.de.pulseradar.features.TestDataGestureFP;
+import jakobkarolus.de.pulseradar.features.activities.InferredContext;
+import jakobkarolus.de.pulseradar.features.activities.InferredContextCallback;
+import jakobkarolus.de.pulseradar.features.activities.WorkdeskPresenceAE;
 import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
+import jakobkarolus.de.pulseradar.features.gestures.GestureCallback;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
 import jakobkarolus.de.pulseradar.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
  */
-public class PulseRadarFragment extends Fragment implements GestureRecognizer{
+public class PulseRadarFragment extends Fragment implements GestureCallback, InferredContextCallback {
 
     private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
     private Bitmap lastSpectrogram;
@@ -76,10 +82,9 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
     private StftManager stftManager;
     private FeatureDetector featureDetector;
 
-    private Button startButton;
-    private Button stopButton;
-    private Button startDetectionButton;
-    private Button stopDetectionButton;
+    private Button recordButton;
+    private Button gestureDetectionButton;
+    private Button activityDetectionButton;
 
     private Button computeStftButton;
     private Button showLastSpec;
@@ -91,7 +96,8 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
     private TextView debugInfo;
     private boolean usePreCalibration=true;
 
-    private FeatureProcessor featureProcessor;
+    private GestureFP gestureFP;
+    private ActivityFP activityFP;
 
 
     @Override
@@ -106,10 +112,8 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
-        startButton = (Button) rootView.findViewById(R.id.button_start_record);
-        stopButton = (Button) rootView.findViewById(R.id.button_stop_record);
-        startDetectionButton = (Button) rootView.findViewById(R.id.button_start_detection);
-        stopDetectionButton = (Button) rootView.findViewById(R.id.button_stop_detection);
+        recordButton = (Button) rootView.findViewById(R.id.button_start_record);
+        gestureDetectionButton = (Button) rootView.findViewById(R.id.button_start_detection);
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
         testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
@@ -117,9 +121,10 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         countDownView = (TextView) rootView.findViewById(R.id.text_countdown);
         calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
         debugInfo = (TextView) rootView.findViewById(R.id.text_debug_info);
+        activityDetectionButton = (Button) rootView.findViewById(R.id.button_start_activity_detection);
         updateDebugInfo();
 
-        startButton.setOnClickListener(new View.OnClickListener() {
+        recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
@@ -129,26 +134,10 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
                 }
             }
         });
-        stopButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    stopRecord();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        startDetectionButton.setOnClickListener(new View.OnClickListener() {
+        gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startDetection();
-            }
-        });
-        stopDetectionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopDetection();
             }
         });
         computeStftButton.setOnClickListener(new View.OnClickListener() {
@@ -180,25 +169,68 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
                 startCalibration();
             }
         });
+        activityDetectionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityDetection();
+            }
+        });
 
         return rootView;
     }
 
+    private void startActivityDetection() {
+
+        setUpSignalAndFeatureStuff(false, false, true);
+
+
+        //save it for comparison -> the features
+        if(activityFP != null)
+            activityFP.startFeatureWriter();
+
+        activityDetectionButton.setText(R.string.button_stop_activity_detection);
+        activityDetectionButton.setBackgroundColor(Color.RED);
+        activityDetectionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopActivityDetection();
+            }
+        });
+        audioManager.startDetection();
+    }
+
+    private void stopActivityDetection() {
+        //save it for comparison -> the features
+        if(activityFP != null) {
+            activityFP.closeFeatureWriter();
+        }
+
+        activityDetectionButton.setText(R.string.button_start_activity_detection);
+        activityDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+        activityDetectionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityDetection();
+            }
+        });
+        audioManager.stopDetection();
+    }
+
     private void startCalibration() {
 
-        setUpSignalAndFeatureStuff(false, true);
+        setUpSignalAndFeatureStuff(false, true, false);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Choose Gesture to calibrate");
-        builder.setItems(featureProcessor.getGestureExtractorNames(), new DialogInterface.OnClickListener() {
+        builder.setItems(gestureFP.getGestureExtractorNames(), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
 
                 //save it for comparison -> the features
-                if (featureProcessor != null)
-                    featureProcessor.startFeatureWriter();
-                featureProcessor.startCalibrating(featureProcessor.getGestureExtractors().get(index));
+                if (gestureFP != null)
+                    gestureFP.startFeatureWriter();
+                gestureFP.startCalibrating(gestureFP.getGestureExtractors().get(index));
                 displayCountdownAndStartDetection();
             }
         });
@@ -221,14 +253,35 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
             @Override
             public void onFinish() {
                 countDownView.setVisibility(View.INVISIBLE);
-                startDetectionButton.setEnabled(false);
-                startDetectionButton.setText("Detection running...");
-                startDetectionButton.setBackgroundColor(Color.RED);
-                stopDetectionButton.setEnabled(true);
+                changeDetectionButton(true);
                 audioManager.startDetection();
             }
         }.start();
 
+    }
+
+    private void changeDetectionButton(boolean isDetecting){
+
+        if(isDetecting){
+            gestureDetectionButton.setText(R.string.button_stop_detection);
+            gestureDetectionButton.setBackgroundColor(Color.RED);
+            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    stopDetection();
+                }
+            });
+        }
+        else{
+            gestureDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+            gestureDetectionButton.setText(R.string.button_start_detection);
+            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startDetection();
+                }
+            });
+        }
     }
 
     @Override
@@ -240,18 +293,15 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
                 updateDebugInfo();
 
                 //only react on completed (successful or failed) calibration
-                if(calibState == CalibrationState.SUCCESSFUL || calibState == CalibrationState.FAILED) {
-                    startDetectionButton.setEnabled(true);
-                    startDetectionButton.setText(R.string.button_start_detection);
-                    startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
-                    stopDetectionButton.setEnabled(false);
+                if (calibState == CalibrationState.SUCCESSFUL || calibState == CalibrationState.FAILED) {
+                    changeDetectionButton(false);
                     audioManager.stopDetection();
 
                     if (calibState == CalibrationState.SUCCESSFUL) {
                         calibVisualFeedbackView.setBackgroundColor(Color.GREEN);
                         calibVisualFeedbackView.setVisibility(View.VISIBLE);
                     }
-                    if(calibState == CalibrationState.FAILED) {
+                    if (calibState == CalibrationState.FAILED) {
                         calibVisualFeedbackView.setBackgroundColor(Color.RED);
                         calibVisualFeedbackView.setVisibility(View.VISIBLE);
                     }
@@ -277,35 +327,29 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
 
     private void stopDetection() {
         //save it for comparison -> the features
-        if(featureProcessor != null) {
-            featureProcessor.closeFeatureWriter();
+        if(gestureFP != null) {
+            gestureFP.closeFeatureWriter();
         }
 
-        startDetectionButton.setEnabled(true);
-        startDetectionButton.setText(R.string.button_start_detection);
-        startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
-        stopDetectionButton.setEnabled(false);
+        changeDetectionButton(false);
         audioManager.stopDetection();
     }
 
     private void startDetection() {
 
-        setUpSignalAndFeatureStuff(false, false);
+        setUpSignalAndFeatureStuff(false, false, false);
 
         //save it for comparison -> the features
-        if(featureProcessor != null)
-            featureProcessor.startFeatureWriter();
+        if(gestureFP != null)
+            gestureFP.startFeatureWriter();
 
-        startDetectionButton.setEnabled(false);
-        startDetectionButton.setText("Detection running...");
-        startDetectionButton.setBackgroundColor(Color.RED);
-        stopDetectionButton.setEnabled(true);
+        changeDetectionButton(true);
         audioManager.startDetection();
     }
 
     private void testDetection() throws IOException {
 
-        setUpSignalAndFeatureStuff(true, false);
+        setUpSignalAndFeatureStuff(true, false, false);
 
         new TestDetectionTask().execute();
 
@@ -318,17 +362,14 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(featureProcessor != null) {
-                    featureProcessor.closeFeatureWriter();
+                if (gestureFP != null) {
+                    gestureFP.closeFeatureWriter();
                 }
 
-                startDetectionButton.setEnabled(true);
-                startDetectionButton.setText(R.string.button_start_detection);
-                startDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
-                stopDetectionButton.setEnabled(false);
+                changeDetectionButton(false);
                 audioManager.stopDetection();
 
-                setUpSignalAndFeatureStuff(false, false);
+                setUpSignalAndFeatureStuff(false, false, false);
                 updateDebugInfo();
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -373,6 +414,13 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
 
     }
 
+    @Override
+    public void onInferredContextChange(InferredContext oldContext, InferredContext newContext, String reason) {
+
+        Log.i("CONTEXT", "Changed from " + oldContext + " to " + newContext +": " + reason);
+
+    }
+
     private class TestDetectionTask extends AsyncTask<Void, String, Void> {
 
         private ProgressDialog pd;
@@ -390,7 +438,7 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         @Override
         protected void onPostExecute(Void aVoid) {
             pd.dismiss();
-            featureProcessor.closeFeatureWriter();
+            gestureFP.closeFeatureWriter();
 
         }
 
@@ -401,7 +449,7 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
             try {
 
                 //save it for comparison -> the features
-                featureProcessor.startFeatureWriter();
+                gestureFP.startFeatureWriter();
 
                 List<Double> dataList = new Vector<>();
                 DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "testing/up_down_s3.bin"));
@@ -462,30 +510,47 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
 
     private void startRecord() throws IOException {
 
-        setUpSignalAndFeatureStuff(false, false);
+        setUpSignalAndFeatureStuff(false, false, false);
 
         //save it for comparison -> the features
-        if(featureProcessor != null)
-            featureProcessor.startFeatureWriter();
+        if(gestureFP != null)
+            gestureFP.startFeatureWriter();
 
-        startButton.setEnabled(false);
-        startButton.setText("Recording...");
-        startButton.setBackgroundColor(Color.RED);
-        stopButton.setEnabled(true);
+        recordButton.setText(R.string.button_stop_record);
+        recordButton.setBackgroundColor(Color.RED);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    stopRecord();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
         audioManager.startRecord();
     }
+
 
     private void stopRecord() throws IOException {
 
         //save it for comparison -> the features
-        if(featureProcessor != null) {
-            featureProcessor.closeFeatureWriter();
+        if(gestureFP != null) {
+            gestureFP.closeFeatureWriter();
         }
 
-        startButton.setEnabled(true);
-        startButton.setText(R.string.button_start_record);
-        startButton.setBackgroundResource(android.R.drawable.btn_default);
-        stopButton.setEnabled(false);
+        recordButton.setText(R.string.button_start_record);
+        recordButton.setBackgroundResource(android.R.drawable.btn_default);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    startRecord();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
         computeStftButton.setEnabled(true);
         audioManager.stopRecord();
 
@@ -495,10 +560,10 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         fileNameDialog.show(ft, "FileNameDialog");
     }
 
-    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating){
+    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating, boolean activityDetection){
         SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
         audioManager.setSignalGenerator(signalGen);
-        initializeFeatureDetector(testData, isCalibrating);
+        initializeFeatureDetector(testData, isCalibrating, activityDetection);
     }
 
     @Override
@@ -547,7 +612,7 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         super.onResume();
     }
 
-    private void initializeFeatureDetector(boolean testData, boolean isCalibrating) {
+    private void initializeFeatureDetector(boolean testData, boolean isCalibrating, boolean activityDetection) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
         try{
@@ -563,7 +628,14 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
                 double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
                 usePreCalibration = sharedPreferences.getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
 
-                featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength));
+                if(!activityDetection) {
+                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), false);
+                }
+                else{
+                    //use predefined values for activity recognition
+                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), false);
+                }
+
             }
             else
                 featureDetector = new DummyFeatureDetector(0.0);
@@ -574,38 +646,42 @@ public class PulseRadarFragment extends Fragment implements GestureRecognizer{
         }
 
         if(testData)
-            featureProcessor = new TestDataFeatureProcessor(this, getActivity());
+            gestureFP = new TestDataGestureFP(this, getActivity());
         else
-            featureProcessor = new FeatureProcessor(this);
+            gestureFP = new GestureFP(this);
 
-        //TODO: GesturesExtractors as preferences?
-        List<GestureExtractor> gestureExtractors = new Vector<>();
-        //gestureExtractors.add(new DownGE());
-        //gestureExtractors.add(new UpGE());
-        //gestureExtractors.add(new DownUpGE());
-        gestureExtractors.add(new SwipeGE());
+        if(!activityDetection) {
+            //TODO: GesturesExtractors as preferences?
+            List<GestureExtractor> gestureExtractors = new Vector<>();
+            //gestureExtractors.add(new DownGE());
+            //gestureExtractors.add(new UpGE());
+            //gestureExtractors.add(new DownUpGE());
+            gestureExtractors.add(new SwipeGE());
 
-        for(GestureExtractor ge : gestureExtractors){
-            if(!usePreCalibration)
-                initializeGEThresholds(ge);
-            featureProcessor.registerGestureExtractor(ge);
+            for (GestureExtractor ge : gestureExtractors) {
+                if (!usePreCalibration)
+                    initializeGEThresholds(ge);
+                gestureFP.registerGestureExtractor(ge);
+            }
+            featureDetector.registerFeatureExtractor(new GaussianFE(gestureFP));
+
+        }
+        else{
+            activityFP = new ActivityFP();
+            activityFP.registerActivityExtractor(new WorkdeskPresenceAE(this));
+            featureDetector.registerFeatureExtractor(new GaussianFE(activityFP));
         }
 
         updateDebugInfo();
-
-        //featureProcessor.registerGestureExtractor(new DownGE());
-        //featureProcessor.registerGestureExtractor(new UpGE());
-        //featureProcessor.registerGestureExtractor(new TwoMotionGE());
-        //featureProcessor.registerGestureExtractor(new SwipeGE());
-        featureDetector.registerFeatureExtractor(new GaussianFE(featureProcessor));
         audioManager.setFeatureDetector(featureDetector);
+
 
     }
 
     private void updateDebugInfo() {
         StringBuffer buffer = new StringBuffer();
-        if(featureProcessor != null) {
-            for (GestureExtractor ge : featureProcessor.getGestureExtractors()) {
+        if(gestureFP != null) {
+            for (GestureExtractor ge : gestureFP.getGestureExtractors()) {
                 buffer.append(ge.getName() + ": " + ge.getThresholds() + "\n");
             }
         }

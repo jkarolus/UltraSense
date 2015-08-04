@@ -1,16 +1,13 @@
-package jakobkarolus.de.pulseradar.view;
+package jakobkarolus.de.pulseradar.features.gestures;
 
 import java.util.Map;
-
-import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
-import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 
 /**
  * abstract hook methods getting called when a gesture is recognized or to inform the user during calibration
  * <br><br>
  * Created by Jakob on 30.07.2015.
  */
-public interface GestureRecognizer {
+public interface GestureCallback {
 
     /**
      * callback during a multiple-step calibration

@@ -12,20 +12,20 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.R;
-import jakobkarolus.de.pulseradar.view.GestureRecognizer;
+import jakobkarolus.de.pulseradar.features.gestures.GestureCallback;
 import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**
  * <br><br>
  * Created by Jakob on 26.07.2015.
  */
-public class TestDataFeatureProcessor extends FeatureProcessor{
+public class TestDataGestureFP extends GestureFP {
 
     private List<Feature> extractedFeatures;
 
     private Activity ctx;
 
-    public TestDataFeatureProcessor(GestureRecognizer gestureCallback, Activity ctx) {
+    public TestDataGestureFP(GestureCallback gestureCallback, Activity ctx) {
         super(gestureCallback);
         this.ctx = ctx;
         this.extractedFeatures = new Vector<>();

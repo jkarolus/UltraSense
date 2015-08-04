@@ -7,7 +7,7 @@ import jakobkarolus.de.pulseradar.features.Feature;
 
 /**
  * Interface for each GestureExtrator. Given a list of Feature each subclass should decide whether to
- * extract a feature or not and modify the list accordingly.
+ * extract a gesture or not and modify the list accordingly.
  *
  * <br><br>
  * Created by Jakob on 07.07.2015.

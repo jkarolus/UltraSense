@@ -35,6 +35,9 @@ public class GaussianFE extends FeatureExtractor{
         if(uF.getEndTime() -uF.getStartTime() <= 0)
             return null;
 
+        if(uF.getUnrefinedFeature().size() <= 1)
+            return null;
+
         double[] y = toArray(uF.getUnrefinedFeature());
 
         double[] x = getRange(uF.getStartTime(), y.length, uF.getTimeIncreasePerStep());

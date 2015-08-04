@@ -22,12 +22,13 @@ public class MeanBasedFD extends FeatureDetector{
     private int currentSlack;
     private double[] win;
     private double windowAmp;
+    private boolean ignoreNoise;
 
     private double[] carryOver;
     private boolean carryAvailable;
 
 
-    public MeanBasedFD(double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win) {
+    public MeanBasedFD(double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win, boolean ignoreNoise) {
         super((double) hopSize / sampleRate);
         this.fftLength = fftLength;
         this.hopSize = hopSize;
@@ -41,6 +42,7 @@ public class MeanBasedFD extends FeatureDetector{
         this.carryOver = new double[hopSize];
         this.win = win;
         this.windowAmp = AlgoHelper.sumWindowNorm(win);
+        this.ignoreNoise = ignoreNoise;
 
         //instantiate new FD every time recording starts to reset carry
         this.carryAvailable = false;
@@ -166,6 +168,12 @@ public class MeanBasedFD extends FeatureDetector{
 
         means[0] = meanHigh;
         means[1] = meanLow;
+
+        if(ignoreNoise){
+            for(int i=0; i< means.length; i++)
+                if(means[i] >= 8.0)
+                    means[i] = 0.0;
+        }
 
         return means;
 

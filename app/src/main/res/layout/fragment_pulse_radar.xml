@@ -28,14 +28,6 @@
         android:onClick="startRecord"
         android:text="@string/button_start_record"/>
 
-    <Button
-        android:layout_below="@id/button_start_record"
-        android:id="@+id/button_stop_record"
-        android:enabled="false"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:onClick="stopRecord"
-        android:text="@string/button_stop_record"/>
 
     <View
         android:layout_width="match_parent"
@@ -46,7 +38,6 @@
 
     <TextView
         android:id="@+id/text_detection"
-        android:layout_below="@id/button_stop_record"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Detection"
@@ -54,19 +45,16 @@
         android:textStyle="bold"/>
 
     <Button
-        android:layout_below="@+id/text_detection"
         android:id="@+id/button_start_detection"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/button_start_detection"/>
 
     <Button
-        android:layout_below="@id/button_start_detection"
-        android:id="@+id/button_stop_detection"
-        android:enabled="false"
+        android:id="@+id/button_start_activity_detection"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="@string/button_stop_detection"/>
+        android:text="@string/button_start_activity_detection"/>
 
 
     <View
@@ -82,7 +70,6 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:layout_below="@id/button_stop_detection"
         android:layout_marginTop="10dp"
         android:text="@string/info"/>
 
