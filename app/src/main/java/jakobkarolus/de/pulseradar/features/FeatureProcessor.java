@@ -61,6 +61,12 @@ public abstract class FeatureProcessor {
     }
 
     /**
+     * some FP may decide to decouple feature processing from incoming feature rate, e.g. ActivityFP.<br>
+     * Upon receiving the call to this method, these FP should stop their processing
+     */
+    public abstract void stopFeatureProcessing();
+
+    /**
      * hook method for subclass specific behavior
      * @param feature the Feature that was extracted
      */

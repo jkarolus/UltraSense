@@ -25,11 +25,19 @@ public abstract class ActivityExtractor {
     }
 
     /**
-     * Detects activities based on the current features.
-     * Each subclass should modify the list of features upon detecting an activity
+     * Gets called by an ActivityFP everytime a new feature is detected.<br>
      *
-     * @param features the current List of detected features
-     * @return Activity (an inferred context) that matches the features
+     * @param feature the newest feature that was detected
+     * @return true if the feature has been consumed; otherwise false
+     */
+    public abstract boolean processNewFeature(Feature feature);
+
+    /**
+     * Detects activities based on the current features.<br>
+     * Contrary to the GestureFP, this method is called in regular time intervals to enable time sensitive context.<br>
+     * ActivityExtractor should modify the list upon detecting an activity!
+     *
+     * @param features the current feature list
      */
     public abstract void processFeatureList(List<Feature> features);
 

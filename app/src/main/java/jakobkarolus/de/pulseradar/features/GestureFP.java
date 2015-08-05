@@ -71,6 +71,11 @@ public class GestureFP extends FeatureProcessor{
 
 
     @Override
+    public void stopFeatureProcessing() {
+        //GestureFP does not implicit periodic feature processing -> nothing to do here
+    }
+
+    @Override
     public void processFeatureOnSubclass(Feature feature) {
 
         //calibration ongoing

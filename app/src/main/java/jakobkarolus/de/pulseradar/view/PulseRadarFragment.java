@@ -214,6 +214,8 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
             }
         });
         audioManager.stopDetection();
+        activityFP.stopFeatureProcessing();
+
     }
 
     private void startCalibration() {

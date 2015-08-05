@@ -16,7 +16,8 @@ public interface GestureExtractor {
 
     /**
      * Detects Gestures based on the current features.
-     * Each subclass should modify the list of features upon detecting a gesture
+     * Each subclass should modify the list of features upon detecting a gesture.<br>
+     * Gets called by the GestureFP everytime a new feature arrives
      *
      * @param features the current List of detected features
      * @return a list of gestures that match the features
