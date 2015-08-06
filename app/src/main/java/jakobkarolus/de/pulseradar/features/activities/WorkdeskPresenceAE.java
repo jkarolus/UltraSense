@@ -1,7 +1,5 @@
 package jakobkarolus.de.pulseradar.features.activities;
 
-import android.util.Log;
-
 import java.util.List;
 
 import jakobkarolus.de.pulseradar.features.Feature;
@@ -18,12 +16,12 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
     //6.077 <-> 7.7479; 0.7506 <-> 1.0188
     //-5.8236 <-> -3.7968; 0.7238 <-> 1.1126
 
-    private static final double WEIGHT_MIN_APPROACH = 5.0;
+    private static final double WEIGHT_MIN_APPROACH = 4.0;
     private static final double WEIGHT_MAX_APPROACH = 10.0;
     private static final double LENGTH_MIN_APPROACH = 0.5;
     private static final double LENGTH_MAX_APPROACH = 1.15;
 
-    private static final double WEIGHT_MIN_WITHDRAW = -8.0;
+    private static final double WEIGHT_MIN_WITHDRAW = -10.0;
     private static final double WEIGHT_MAX_WITHDRAW = -3.0;
     private static final double LENGTH_MIN_WITHDRAW = 0.4;
     private static final double LENGTH_MAX_WITHDRAW = 1.1;
@@ -71,9 +69,6 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
     @Override
     public void processFeatureList(List<Feature> features) {
-
-        Log.w("SIZE", "" + features.size());
-        Log.w("NO_FEATURE", "" + noFeaturePresentCounter);
 
         //update the state according to the feature list
         if(features.isEmpty()){

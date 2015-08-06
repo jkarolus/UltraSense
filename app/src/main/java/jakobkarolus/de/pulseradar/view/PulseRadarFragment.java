@@ -635,7 +635,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
                 }
                 else{
                     //use predefined values for activity recognition
-                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), false);
+                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true);
                 }
 
             }
