@@ -15,9 +15,12 @@ public abstract class ActivityExtractor {
 
 
     private InferredContextCallback callback;
+    private InferredContext currentContext;
+
 
     public ActivityExtractor(InferredContextCallback callback) {
         this.callback = callback;
+        this.currentContext = InferredContext.UNKNOWN;
     }
 
     public InferredContextCallback getCallback() {
@@ -45,5 +48,20 @@ public abstract class ActivityExtractor {
      *
      * @return the current InferredContext based on previously seen features
      */
-    public abstract InferredContext getCurrentContext();
+    public InferredContext getCurrentContext(){
+        return this.currentContext;
+    }
+
+    /**
+     * changes the internal state to the new context
+     * @param newContext the new context
+     * @param reason possibility to state a reason why the context was changed
+     * @return whether the context was changed (in other words is it is different that the old one)
+     */
+    protected boolean changeContext(InferredContext newContext, String reason){
+        InferredContext oldContext = getCurrentContext();
+        this.currentContext = newContext;
+        getCallback().onInferredContextChange(oldContext, newContext, reason);
+        return oldContext != newContext;
+    }
 }

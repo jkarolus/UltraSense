@@ -53,8 +53,8 @@ public abstract class FeatureProcessor {
         setCurrentFeatureTime(feature.getTime());
         saveFeatureToFile(feature);
         Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
-        getFeatures().add(feature);
         Log.d("FEATURE_STACK", printFeatureStack());
+        getFeatures().add(feature);
 
         processFeatureOnSubclass(feature);
 

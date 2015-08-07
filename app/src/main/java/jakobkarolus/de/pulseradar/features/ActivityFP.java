@@ -10,6 +10,9 @@ import java.util.Vector;
 import jakobkarolus.de.pulseradar.features.activities.ActivityExtractor;
 
 /**
+ * Combines Features and their respective Activities, by keeping a List of current Features and delegating
+ * Activity recognition to its ActivityExtractors.<br>
+ * Contrary to the GestureFP, the ActivityFP also informs its AEs regularly about the current feature stack, independent from incoming feature times.
  * <br><br>
  * Created by Jakob on 04.08.2015.
  */

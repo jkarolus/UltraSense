@@ -32,12 +32,10 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
     private int regularUpdatesCounter;
     private int noFeaturePresentCounter;
 
-    private InferredContext currentContext;
-
 
     public WorkdeskPresenceAE(InferredContextCallback callback) {
         super(callback);
-        this.currentContext = InferredContext.PRESENT;
+        changeContext(InferredContext.PRESENT, "Initial state");
         this.noFeaturePresentCounter = 0;
         this.regularUpdatesCounter = 0;
 
@@ -50,17 +48,13 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
         regularUpdatesCounter++;
 
         if(userIsWithdrawing(f)){
-            InferredContext oldContext = currentContext;
-            currentContext = InferredContext.AWAY;
-            getCallback().onInferredContextChange(oldContext, currentContext, "User withdrawing ");
+            changeContext(InferredContext.AWAY, "User withdrawing");
             regularUpdatesCounter = 0;
             return true;
         }
 
         if(userIsApproaching(f)) {
-            InferredContext oldContext = currentContext;
-            currentContext = InferredContext.PRESENT;
-            getCallback().onInferredContextChange(oldContext, currentContext, "User approaching");
+            changeContext(InferredContext.PRESENT, "User approaching");
             return true;
         }
 
@@ -83,20 +77,16 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
         }
 
         //decide whether to change context based on (in-)activity
-        if(currentContext == InferredContext.PRESENT){
+        if(getCurrentContext() == InferredContext.PRESENT){
             if(noFeaturePresentCounter >= COUNTER_THRESHOLD_WORKING){
                 //change context to AWAY
-                InferredContext oldContext = currentContext;
-                currentContext = InferredContext.AWAY;
-                getCallback().onInferredContextChange(oldContext, currentContext, "Due to inactivity");
+                changeContext(InferredContext.AWAY, "Due to inactivity");
             }
         }
 
-        if(currentContext == InferredContext.AWAY){
+        if(getCurrentContext() == InferredContext.AWAY){
             if(regularUpdatesCounter >= UPDATES_AMOUNT_THRESHOLD){
-                InferredContext oldContext = currentContext;
-                currentContext = InferredContext.PRESENT;
-                getCallback().onInferredContextChange(oldContext, currentContext, "Activity while not being present");
+                changeContext(InferredContext.PRESENT, "Activity while not being present");
             }
         }
 
@@ -109,10 +99,5 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
     private boolean userIsWithdrawing(Feature f) {
         return f.getWeight() >= WEIGHT_MIN_WITHDRAW && f.getWeight() <= WEIGHT_MAX_WITHDRAW && f.getLength() >= LENGTH_MIN_WITHDRAW && f.getLength() <= LENGTH_MAX_WITHDRAW;
-    }
-
-    @Override
-    public InferredContext getCurrentContext() {
-        return currentContext;
     }
 }

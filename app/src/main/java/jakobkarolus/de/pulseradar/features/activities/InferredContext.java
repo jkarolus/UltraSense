@@ -9,5 +9,12 @@ package jakobkarolus.de.pulseradar.features.activities;
 public enum InferredContext {
 
     PRESENT,
-    AWAY;
+    AWAY,
+    BED_SLEEPING,
+    BED_AWAKE,
+    BED_PRESENT,
+    BED_AWAY,
+    BED_FALL,
+    UNKNOWN;
+
 }
