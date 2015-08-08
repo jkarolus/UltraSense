@@ -30,7 +30,7 @@ public abstract class OneMotionGE implements GestureExtractor{
     private double featureWeightMaxThr = -Double.MAX_VALUE;
 
 
-    private DecimalFormat df = new DecimalFormat("0.0000E0");
+    private DecimalFormat df = new DecimalFormat("####0.0000");
 
     @Override
     public boolean setThresholds(Map<String, Double> thresholds) {

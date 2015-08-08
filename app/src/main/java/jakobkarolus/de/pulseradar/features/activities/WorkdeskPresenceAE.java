@@ -43,19 +43,20 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
 
     @Override
-    public boolean processNewFeature(Feature f) {
+    public boolean processNewFeature(Feature f, List<Feature> featureList) {
 
         regularUpdatesCounter++;
 
+        //we dont want to consume the feature, to get a better time estimate for switching context due to (in-)activity
         if(userIsWithdrawing(f)){
             changeContext(InferredContext.AWAY, "User withdrawing");
             regularUpdatesCounter = 0;
-            return true;
+            return false;
         }
 
         if(userIsApproaching(f)) {
             changeContext(InferredContext.PRESENT, "User approaching");
-            return true;
+            return false;
         }
 
         return false;

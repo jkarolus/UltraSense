@@ -20,7 +20,7 @@ import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
  */
 public abstract class FeatureProcessor {
 
-    protected DecimalFormat df = new DecimalFormat("0.0000E0");
+    protected DecimalFormat df = new DecimalFormat("####0.0000");
     private List<Feature> features;
     private double currentFeatureTime;
     private FileWriter featWriter;
@@ -54,7 +54,6 @@ public abstract class FeatureProcessor {
         saveFeatureToFile(feature);
         Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
         Log.d("FEATURE_STACK", printFeatureStack());
-        getFeatures().add(feature);
 
         processFeatureOnSubclass(feature);
 

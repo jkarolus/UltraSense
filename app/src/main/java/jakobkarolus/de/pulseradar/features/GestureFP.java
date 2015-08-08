@@ -78,6 +78,8 @@ public class GestureFP extends FeatureProcessor{
     @Override
     public void processFeatureOnSubclass(Feature feature) {
 
+        getFeatures().add(feature);
+
         //calibration ongoing
         if(isCalibrating && calibrator != null){
 

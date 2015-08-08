@@ -31,9 +31,10 @@ public abstract class ActivityExtractor {
      * Gets called by an ActivityFP everytime a new feature is detected.<br>
      *
      * @param feature the newest feature that was detected
-     * @return true if the feature has been consumed; otherwise false
+     * @param featureList the current feature list (DOES NOT include the new feature)
+     * @return true if the feature has been consumed (will not be put on the stack); otherwise false
      */
-    public abstract boolean processNewFeature(Feature feature);
+    public abstract boolean processNewFeature(Feature feature, List<Feature> featureList);
 
     /**
      * Detects activities based on the current features.<br>

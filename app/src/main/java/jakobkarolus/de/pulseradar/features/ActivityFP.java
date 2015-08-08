@@ -78,10 +78,13 @@ public class ActivityFP extends FeatureProcessor{
     @Override
     public void processFeatureOnSubclass(Feature feature) {
 
+        //only add the feature if it was not consumed
         for(ActivityExtractor ae : activityExtractors){
-            ae.processNewFeature(feature);
+            if(!ae.processNewFeature(feature, getFeatures()))
+                getFeatures().add(feature);
         }
         lastTimeFeatureSeen = System.currentTimeMillis();
+
     }
 
     @Override

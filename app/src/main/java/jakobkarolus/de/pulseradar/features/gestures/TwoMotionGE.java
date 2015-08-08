@@ -24,7 +24,7 @@ public abstract class TwoMotionGE implements GestureExtractor{
     private double featureTimeDistanceMinThr = Double.MAX_VALUE;
     private double featureTimeDistanceMaxThr = -Double.MAX_VALUE;
 
-    private DecimalFormat df = new DecimalFormat("0.0000E0");
+    private DecimalFormat df = new DecimalFormat("####0.0000");
 
 
     @Override

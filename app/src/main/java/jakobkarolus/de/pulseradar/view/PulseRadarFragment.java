@@ -59,10 +59,12 @@ import jakobkarolus.de.pulseradar.features.GaussianFE;
 import jakobkarolus.de.pulseradar.features.GestureFP;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataGestureFP;
+import jakobkarolus.de.pulseradar.features.activities.BedFallAE;
 import jakobkarolus.de.pulseradar.features.activities.InferredContext;
 import jakobkarolus.de.pulseradar.features.activities.InferredContextCallback;
 import jakobkarolus.de.pulseradar.features.activities.WorkdeskPresenceAE;
 import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
+import jakobkarolus.de.pulseradar.features.gestures.DownUpGE;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureCallback;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
@@ -181,22 +183,31 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
     private void startActivityDetection() {
 
-        setUpSignalAndFeatureStuff(false, false, true);
-
-
-        //save it for comparison -> the features
-        if(activityFP != null)
-            activityFP.startFeatureWriter();
-
-        activityDetectionButton.setText(R.string.button_stop_activity_detection);
-        activityDetectionButton.setBackgroundColor(Color.RED);
-        activityDetectionButton.setOnClickListener(new View.OnClickListener() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Choose ActivityExtractor");
+        builder.setItems(new String[]{"WordkDesk", "Bed"}, new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                stopActivityDetection();
+            public void onClick(DialogInterface dialog, int index) {
+
+                setUpSignalAndFeatureStuff(false, false, true, index);
+
+                //save it for comparison -> the features
+                if (activityFP != null)
+                    activityFP.startFeatureWriter();
+
+                activityDetectionButton.setText(R.string.button_stop_activity_detection);
+                activityDetectionButton.setBackgroundColor(Color.RED);
+                activityDetectionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        stopActivityDetection();
+                    }
+                });
+                audioManager.startDetection();
             }
         });
-        audioManager.startDetection();
+        builder.show();
+
     }
 
     private void stopActivityDetection() {
@@ -220,7 +231,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
     private void startCalibration() {
 
-        setUpSignalAndFeatureStuff(false, true, false);
+        setUpSignalAndFeatureStuff(false, true, false, 0);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Choose Gesture to calibrate");
@@ -339,7 +350,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
     private void startDetection() {
 
-        setUpSignalAndFeatureStuff(false, false, false);
+        setUpSignalAndFeatureStuff(false, false, false, 0);
 
         //save it for comparison -> the features
         if(gestureFP != null)
@@ -351,7 +362,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
     private void testDetection() throws IOException {
 
-        setUpSignalAndFeatureStuff(true, false, false);
+        setUpSignalAndFeatureStuff(true, false, false, 0);
 
         new TestDetectionTask().execute();
 
@@ -371,7 +382,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
                 changeDetectionButton(false);
                 audioManager.stopDetection();
 
-                setUpSignalAndFeatureStuff(false, false, false);
+                setUpSignalAndFeatureStuff(false, false, false, 0);
                 updateDebugInfo();
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -512,7 +523,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
     private void startRecord() throws IOException {
 
-        setUpSignalAndFeatureStuff(false, false, false);
+        setUpSignalAndFeatureStuff(false, false, false, 0);
 
         //save it for comparison -> the features
         if(gestureFP != null)
@@ -562,10 +573,10 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
         fileNameDialog.show(ft, "FileNameDialog");
     }
 
-    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating, boolean activityDetection){
+    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating, boolean activityDetection, int activityIndex){
         SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
         audioManager.setSignalGenerator(signalGen);
-        initializeFeatureDetector(testData, isCalibrating, activityDetection);
+        initializeFeatureDetector(testData, isCalibrating, activityDetection, activityIndex);
     }
 
     @Override
@@ -614,7 +625,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
         super.onResume();
     }
 
-    private void initializeFeatureDetector(boolean testData, boolean isCalibrating, boolean activityDetection) {
+    private void initializeFeatureDetector(boolean testData, boolean isCalibrating, boolean activityDetection, int activityIndex) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
         try{
@@ -631,11 +642,14 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
                 usePreCalibration = sharedPreferences.getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
 
                 if(!activityDetection) {
-                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), false);
+                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), false, 0.0);
                 }
                 else{
                     //use predefined values for activity recognition
-                    featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true);
+                    if(activityIndex == 0)
+                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true, 8.0);
+                    else
+                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 2.0, 1.0, 5, AlgoHelper.getHannWindow(fftLength), true, 20.0);
                 }
 
             }
@@ -657,7 +671,7 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
             List<GestureExtractor> gestureExtractors = new Vector<>();
             //gestureExtractors.add(new DownGE());
             //gestureExtractors.add(new UpGE());
-            //gestureExtractors.add(new DownUpGE());
+            gestureExtractors.add(new DownUpGE());
             gestureExtractors.add(new SwipeGE());
 
             for (GestureExtractor ge : gestureExtractors) {
@@ -670,7 +684,11 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
         }
         else{
             activityFP = new ActivityFP();
-            activityFP.registerActivityExtractor(new WorkdeskPresenceAE(this));
+            if(activityIndex==0)
+                activityFP.registerActivityExtractor(new WorkdeskPresenceAE(this));
+            else
+                activityFP.registerActivityExtractor(new BedFallAE(this));
+
             featureDetector.registerFeatureExtractor(new GaussianFE(activityFP));
         }
 

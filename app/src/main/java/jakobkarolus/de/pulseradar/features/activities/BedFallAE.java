@@ -18,17 +18,17 @@ public class BedFallAE extends ActivityExtractor {
     /**
      * does not include bed_rect_1-3 -> unlikely scenario
      */
-    private static double WEIGHT_MIN_WITHDRAW = -8.5;
+    private static double WEIGHT_MIN_WITHDRAW = -10.0;
     private static double WEIGHT_MAX_WITHDRAW = -5.0;
-    private static double LENGTH_MIN_WITHDRAW = 0.65;
-    private static double LENGTH_MAX_WITHDRAW = 0.82;
+    private static double LENGTH_MIN_WITHDRAW = 0.5;
+    private static double LENGTH_MAX_WITHDRAW = 1.2;
 
     /**
      * includes both soft and hard falls
      */
     private static double WEIGHT_MIN_FALL = -8.0;
     private static double WEIGHT_MAX_FALL = -3.3;
-    private static double LENGTH_MIN_FALL = 0.2;
+    private static double LENGTH_MIN_FALL = 0.14;
     private static double LENGTH_MAX_FALL = 0.48;
 
     /**
@@ -36,7 +36,7 @@ public class BedFallAE extends ActivityExtractor {
      */
     private static double WEIGHT_MIN_APPROACH = 8.0;
     private static double WEIGHT_MAX_APPROACH = 15;
-    private static double LENGTH_MIN_APPROACH = 0.6;
+    private static double LENGTH_MIN_APPROACH = 0.5;
     private static double LENGTH_MAX_APPROACH = 1.4;
 
     /**
@@ -64,10 +64,13 @@ public class BedFallAE extends ActivityExtractor {
 
     public BedFallAE(InferredContextCallback callback) {
         super(callback);
+        changeContext(BED_PRESENT, "Initial state");
     }
 
     @Override
-    public boolean processNewFeature(Feature feature) {
+    public boolean processNewFeature(Feature feature, List<Feature> featureList) {
+
+        processFeatureList(featureList);
 
         if(userIsWithdrawing(feature) && getCurrentContext() == BED_AWAKE){
             changeContext(BED_AWAY, "User walking away");
@@ -112,10 +115,13 @@ public class BedFallAE extends ActivityExtractor {
                 break;
             case BED_SLEEPING:
                 checkIfTheUserHasWokenUp(features);
+                break;
             case BED_AWAY:
                 checkIfUserIsPresent(features);
+                break;
             case BED_AWAKE:
                 checkIfTheUserSleepsAgain(features);
+                break;
         }
 
     }
@@ -176,10 +182,5 @@ public class BedFallAE extends ActivityExtractor {
                 return false;
         }
         return true;
-    }
-
-    @Override
-    public InferredContext getCurrentContext() {
-        return null;
     }
 }
