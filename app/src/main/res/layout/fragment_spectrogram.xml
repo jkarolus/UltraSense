@@ -8,7 +8,7 @@
         android:layout_height="wrap_content"
         android:text="@string/spec_info_text"/>
 
-    <jakobkarolus.de.pulseradar.view.TouchImageView
+    <jakobkarolus.de.ultrasense.view.TouchImageView
         android:id="@+id/spectrogram"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
