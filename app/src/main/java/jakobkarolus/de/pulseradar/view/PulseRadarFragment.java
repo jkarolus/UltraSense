@@ -52,11 +52,11 @@ import jakobkarolus.de.pulseradar.algorithm.FMCWSignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.SignalGenerator;
 import jakobkarolus.de.pulseradar.algorithm.StftManager;
 import jakobkarolus.de.pulseradar.audio.AudioManager;
-import jakobkarolus.de.pulseradar.features.ActivityFP;
+import jakobkarolus.de.pulseradar.features.activities.ActivityFP;
 import jakobkarolus.de.pulseradar.features.DummyFeatureDetector;
 import jakobkarolus.de.pulseradar.features.FeatureDetector;
 import jakobkarolus.de.pulseradar.features.GaussianFE;
-import jakobkarolus.de.pulseradar.features.GestureFP;
+import jakobkarolus.de.pulseradar.features.gestures.GestureFP;
 import jakobkarolus.de.pulseradar.features.MeanBasedFD;
 import jakobkarolus.de.pulseradar.features.TestDataGestureFP;
 import jakobkarolus.de.pulseradar.features.activities.BedFallAE;
@@ -620,10 +620,6 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
         return false;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
 
     private void initializeFeatureDetector(boolean testData, boolean isCalibrating, boolean activityDetection, int activityIndex) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
@@ -643,6 +639,8 @@ public class PulseRadarFragment extends Fragment implements GestureCallback, Inf
 
                 if(!activityDetection) {
                     featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), false, 0.0);
+                    //featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 3, -50.0, 3, 2, 1, AlgoHelper.getHannWindow(fftLength), true, 15);
+
                 }
                 else{
                     //use predefined values for activity recognition

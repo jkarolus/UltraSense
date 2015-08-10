@@ -52,8 +52,6 @@ public abstract class FeatureProcessor {
         //save the current feature time to clean up the stack if necessary
         setCurrentFeatureTime(feature.getTime());
         saveFeatureToFile(feature);
-        Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
-        Log.d("FEATURE_STACK", printFeatureStack());
 
         processFeatureOnSubclass(feature);
 
@@ -135,5 +133,12 @@ public abstract class FeatureProcessor {
                 buffer.append("L");
         }
         return buffer.toString();
+    }
+
+    protected void printFeaturesOnLog() {
+        Log.i("FEATURE_STACK", "------------------------------------------");
+        for(Feature feature : getFeatures())
+            Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
+        Log.i("FEATURE_STACK_END", "--------------------------------------");
     }
 }

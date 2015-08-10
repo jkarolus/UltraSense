@@ -11,6 +11,7 @@ import jakobkarolus.de.pulseradar.features.Feature;
  */
 public class SwipeGE extends TwoMotionGE{
 
+    /*
     private static final double F1_LENGTH_MIN = 0.023;
     private static final double F1_LENGTH_MAX = 0.1;
     private static final double F1_WEIGHT_MIN = 0.2;
@@ -19,6 +20,23 @@ public class SwipeGE extends TwoMotionGE{
     private static final double F2_LENGTH_MIN = 0.02;
     private static final double F2_LENGTH_MAX = 0.11;
     private static final double F2_WEIGHT_MIN = -2.5;
+    private static final double F2_WEIGHT_MAX = -0.2;
+
+    private static final double TIME_DIST_MIN = 0.05;
+    private static final double TIME_DIST_MAX = 0.28;
+    */
+
+    /**noisy env
+     *
+     */
+    private static final double F1_LENGTH_MIN = 0.02;
+    private static final double F1_LENGTH_MAX = 0.13;
+    private static final double F1_WEIGHT_MIN = 0.2;
+    private static final double F1_WEIGHT_MAX = 3.0;
+
+    private static final double F2_LENGTH_MIN = 0.02;
+    private static final double F2_LENGTH_MAX = 0.13;
+    private static final double F2_WEIGHT_MIN = -3.0;
     private static final double F2_WEIGHT_MAX = -0.2;
 
     private static final double TIME_DIST_MIN = 0.05;

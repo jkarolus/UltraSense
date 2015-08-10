@@ -1,10 +1,14 @@
-package jakobkarolus.de.pulseradar.features;
+package jakobkarolus.de.pulseradar.features.gestures;
 
 import android.util.Log;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
 
+import jakobkarolus.de.pulseradar.features.Feature;
+import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.gestures.CalibrationState;
 import jakobkarolus.de.pulseradar.features.gestures.Gesture;
 import jakobkarolus.de.pulseradar.features.gestures.GestureExtractor;
@@ -17,7 +21,7 @@ import jakobkarolus.de.pulseradar.features.gestures.GestureCallback;
  * <br><br>
  * Created by Jakob on 02.07.2015.
  */
-public class GestureFP extends FeatureProcessor{
+public class GestureFP extends FeatureProcessor {
 
     private static final double TIME_THRESHOLD = 5.0;
     private static final int MAX_CALIBRATION_RUNS = 5;
@@ -79,6 +83,19 @@ public class GestureFP extends FeatureProcessor{
     public void processFeatureOnSubclass(Feature feature) {
 
         getFeatures().add(feature);
+        Collections.sort(getFeatures(), new Comparator<Feature>() {
+            @Override
+            public int compare(Feature lhs, Feature rhs) {
+                if (lhs.getTime() > rhs.getTime())
+                    return 1;
+                else
+                    return -1;
+            }
+        });
+
+
+        printFeaturesOnLog();
+        Log.d("FEATURE_STACK", printFeatureStack());
 
         //calibration ongoing
         if(isCalibrating && calibrator != null){

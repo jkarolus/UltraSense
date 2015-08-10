@@ -13,6 +13,7 @@ import java.util.Vector;
 
 import jakobkarolus.de.pulseradar.R;
 import jakobkarolus.de.pulseradar.features.gestures.GestureCallback;
+import jakobkarolus.de.pulseradar.features.gestures.GestureFP;
 import jakobkarolus.de.pulseradar.view.PulseRadarFragment;
 
 /**

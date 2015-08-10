@@ -1,4 +1,4 @@
-package jakobkarolus.de.pulseradar.features;
+package jakobkarolus.de.pulseradar.features.activities;
 
 import android.util.Log;
 
@@ -7,6 +7,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
 
+import jakobkarolus.de.pulseradar.features.Feature;
+import jakobkarolus.de.pulseradar.features.FeatureProcessor;
 import jakobkarolus.de.pulseradar.features.activities.ActivityExtractor;
 
 /**
@@ -16,7 +18,7 @@ import jakobkarolus.de.pulseradar.features.activities.ActivityExtractor;
  * <br><br>
  * Created by Jakob on 04.08.2015.
  */
-public class ActivityFP extends FeatureProcessor{
+public class ActivityFP extends FeatureProcessor {
 
     private static double TIME_THRESHOLD = 10.0;
     private static long TIME_PERIOD_UPDATES = 1000;
@@ -80,9 +82,17 @@ public class ActivityFP extends FeatureProcessor{
 
         //only add the feature if it was not consumed
         for(ActivityExtractor ae : activityExtractors){
-            if(!ae.processNewFeature(feature, getFeatures()))
+            if(!ae.processNewFeature(feature, getFeatures())) {
                 getFeatures().add(feature);
+            }
+            else{
+                Log.i("FEATURE (CONSUMED)", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
+            }
         }
+
+        printFeaturesOnLog();
+        Log.d("FEATURE_STACK", printFeatureStack());
+
         lastTimeFeatureSeen = System.currentTimeMillis();
 
     }
