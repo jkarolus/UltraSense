@@ -31,5 +31,6 @@
     <string name="pref_key_use_precalibration">Use pre-calibrated values</string>
     <string name="button_start_activity_detection">Start Activity Detection</string>
     <string name="button_stop_activity_detection">Stop Activity Detection</string>
+    <string name="app_name_example">UltraSenseEx</string>
 
 </resources>

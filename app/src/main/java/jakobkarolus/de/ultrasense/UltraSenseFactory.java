@@ -118,6 +118,8 @@ public class UltraSenseFactory {
             throw new IllegalStateException("You must call a create method before stoping any detection!");
 
         audioManager.stopDetection();
+        if(activityFP != null)
+            activityFP.stopFeatureProcessing();
     }
 
     private boolean initializeGEThresholds(GestureExtractor ge) {

@@ -77,26 +77,30 @@ public abstract class FeatureProcessor {
     public abstract double getTimeThresholdForGC();
 
     public void saveFeatureToFile(final Feature feature){
-        //save feature
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    featWriter.write(feature.getTime() + "," + feature.getLength() + "," + feature.getWeight() + "\n");
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if(featWriter != null) {
+            //save feature
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        featWriter.write(feature.getTime() + "," + feature.getLength() + "," + feature.getWeight() + "\n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        });
-        thread.start();
+            });
+            thread.start();
+        }
     }
 
     public void closeFeatureWriter(){
-        try {
-            featWriter.flush();
-            featWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(featWriter != null) {
+            try {
+                featWriter.flush();
+                featWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
