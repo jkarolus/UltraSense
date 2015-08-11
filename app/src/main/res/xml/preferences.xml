@@ -23,25 +23,11 @@
     <PreferenceCategory
         android:title="@string/cw_paras"
         android:key="pref_key_cw_paras">
-        <EditTextPreference
-            android:key="pref_key_cw_freq"
-            android:title="@string/pref_title_cw_freq"
-            android:defaultValue="20000"
-            android:inputType="numberDecimal" />
-
-
-        <ListPreference
-            android:key="pref_key_fft_length"
-            android:title="@string/pref_key_fft_length"
-            android:dialogTitle="@string/pref_key_fft_length"
-            android:entries="@array/pref_key_fft_length_entries"
-            android:entryValues="@array/pref_key_fft_length_values"
-            android:defaultValue="4096" />
 
         <EditTextPreference
-            android:key="pref_key_hopsize"
-            android:title="@string/pref_key_hopsize"
-            android:defaultValue="0.5"
+            android:key="pref_key_db_threshold"
+            android:title="@string/pref_key_db_threshold"
+            android:defaultValue="-55.0"
             android:inputType="numberDecimal" />
 
         <EditTextPreference
@@ -49,12 +35,6 @@
             android:title="@string/pref_key_halfCarrierWidth"
             android:defaultValue="4"
             android:inputType="number" />
-
-        <EditTextPreference
-            android:key="pref_key_db_threshold"
-            android:title="@string/pref_key_db_threshold"
-            android:defaultValue="-55.0"
-            android:inputType="numberDecimal" />
 
         <EditTextPreference
             android:key="pref_key_feat_high_threshold"
@@ -73,6 +53,37 @@
             android:title="@string/pref_key_feat_slack"
             android:defaultValue="0"
             android:inputType="number" />
+
+        <CheckBoxPreference
+            android:key="pref_key_ignore_noise"
+            android:title="@string/pref_key_ignore_noise"
+            android:defaultValue="false"/>
+
+        <EditTextPreference
+            android:key="pref_max_feat_threshold"
+            android:title="@string/pref_max_feat_threshold"
+            android:defaultValue="0"
+            android:inputType="number" />
+
+        <EditTextPreference
+            android:key="pref_key_cw_freq"
+            android:title="@string/pref_title_cw_freq"
+            android:defaultValue="20000"
+            android:inputType="numberDecimal" />
+
+        <ListPreference
+            android:key="pref_key_fft_length"
+            android:title="@string/pref_key_fft_length"
+            android:dialogTitle="@string/pref_key_fft_length"
+            android:entries="@array/pref_key_fft_length_entries"
+            android:entryValues="@array/pref_key_fft_length_values"
+            android:defaultValue="4096" />
+
+        <EditTextPreference
+            android:key="pref_key_hopsize"
+            android:title="@string/pref_key_hopsize"
+            android:defaultValue="0.5"
+            android:inputType="numberDecimal" />
 
 
     </PreferenceCategory>

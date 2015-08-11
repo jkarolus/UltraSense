@@ -1,6 +1,7 @@
 package jakobkarolus.de.ultrasense;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,20 +13,26 @@ import java.util.Map;
 import java.util.Vector;
 
 import jakobkarolus.de.ultrasense.algorithm.AlgoHelper;
-import jakobkarolus.de.ultrasense.audio.CWSignalGenerator;
 import jakobkarolus.de.ultrasense.audio.AudioManager;
-import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
+import jakobkarolus.de.ultrasense.audio.CWSignalGenerator;
+import jakobkarolus.de.ultrasense.audio.FMCWSignalGenerator;
+import jakobkarolus.de.ultrasense.audio.SignalGenerator;
+import jakobkarolus.de.ultrasense.features.DummyFeatureDetector;
+import jakobkarolus.de.ultrasense.features.DummyFeatureProcessor;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;
+import jakobkarolus.de.ultrasense.features.FeatureProcessor;
 import jakobkarolus.de.ultrasense.features.GaussianFE;
-import jakobkarolus.de.ultrasense.features.gestures.GestureFP;
 import jakobkarolus.de.ultrasense.features.MeanBasedFD;
+import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
 import jakobkarolus.de.ultrasense.features.activities.BedFallAE;
 import jakobkarolus.de.ultrasense.features.activities.InferredContextCallback;
 import jakobkarolus.de.ultrasense.features.activities.WorkdeskPresenceAE;
 import jakobkarolus.de.ultrasense.features.gestures.DownUpGE;
 import jakobkarolus.de.ultrasense.features.gestures.GestureCallback;
 import jakobkarolus.de.ultrasense.features.gestures.GestureExtractor;
+import jakobkarolus.de.ultrasense.features.gestures.GestureFP;
 import jakobkarolus.de.ultrasense.features.gestures.SwipeGE;
+import jakobkarolus.de.ultrasense.view.SettingsFragment;
 
 /**
  * Factory class for creating different UltraSense scenarios
@@ -41,6 +48,7 @@ public class UltraSenseModule {
     private static double frequency = 20000;
 
 
+
     private AudioManager audioManager;
     private GestureFP gestureFP;
     private ActivityFP activityFP;
@@ -54,6 +62,56 @@ public class UltraSenseModule {
         this.initialized = false;
     }
 
+    public void createCustomScenario(SharedPreferences settingsParameters) throws IllegalArgumentException{
+        SignalGenerator signalGen;
+        String mode = settingsParameters.getString(SettingsFragment.PREF_MODE, "CW");
+        try {
+            if(mode.equals(SettingsFragment.FMCW_MODE)) {
+                double botFreq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_FMCW_BOT_FREQ, ""));
+                double topFreq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_FMCW_TOP_FREQ, ""));
+                double chirpDur = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_FMCW_CHIRP_DUR, ""));
+                double chirpCycles = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_FMCW_CHIRP_CYCLES, ""));
+                boolean rampUp = settingsParameters.getBoolean(SettingsFragment.KEY_FMCW_RAMP_UP, false);
+
+                signalGen =  new FMCWSignalGenerator(topFreq, botFreq, chirpDur, chirpCycles, SAMPLE_RATE, 1.0f, !rampUp);
+            }
+            else {
+                double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
+                signalGen =  new CWSignalGenerator(freq, 0.1, 1.0, SAMPLE_RATE);
+            }
+        }catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Specified FMCW Parameters are not valid!", e);
+        }
+
+        try{
+            if(mode.equals(SettingsFragment.CW_MODE)){
+                int fftLength = Integer.parseInt(settingsParameters.getString(SettingsFragment.KEY_FFT_LENGTH, ""));
+                double hopSizeFraction = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_HOPSIZE, ""));
+                int hopSize = (int) (hopSizeFraction * fftLength);
+                int halfCarrierWidth = Integer.parseInt(settingsParameters.getString(SettingsFragment.KEY_HALF_CARRIER_WIDTH, ""));
+                double dbThreshold = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_DB_THRESHOLD, ""));
+                double highFeatureThr = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_HIGH_FEAT_THRESHOLD, ""));
+                double lowFeatureThr = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_LOW_FEAT_THRESHOLD, ""));
+                int slackWidth = Integer.parseInt(settingsParameters.getString(SettingsFragment.KEY_FEAT_SLACK, ""));
+                double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
+                boolean ignoreNoise = settingsParameters.getBoolean(SettingsFragment.KEY_CW_IGNORE_NOISE, false);
+                double maxFeatureThreshold = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_MAX_FEAT_THRESHOLD, ""));
+                featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), ignoreNoise, maxFeatureThreshold);
+            }
+            else
+                featureDetector = new DummyFeatureDetector(0.0);
+
+        }catch (NumberFormatException e) {
+            throw new IllegalArgumentException("\"Specified CW or Feature detection parameters are not valid!", e);
+        }
+
+        audioManager.setSignalGenerator(signalGen);
+        FeatureProcessor fp = new DummyFeatureProcessor();
+        featureDetector.registerFeatureExtractor(new GaussianFE(fp));
+
+        audioManager.setFeatureDetector(featureDetector);
+        this.initialized = true;
+    }
 
     public void createGestureDetector(GestureCallback callback, boolean noisy, boolean usePreCalibration){
 
@@ -146,6 +204,10 @@ public class UltraSenseModule {
     public GestureFP getGestureFP() {
         return gestureFP;
     }
+    public AudioManager getAudioManager() {
+        return audioManager;
+    }
+
 
     public String printFeatureDetectionParameters(){
         if(featureDetector != null)
@@ -154,4 +216,33 @@ public class UltraSenseModule {
             return "";
     }
 
+    public void startRecord() {
+        if(!initialized || audioManager == null)
+            throw new IllegalStateException("You must call a create method before starting any detection!");
+
+        try {
+            audioManager.startRecord();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopRecord() {
+        if(!initialized || audioManager == null)
+            throw new IllegalStateException("You must call a create method before stoping any detection!");
+
+        try {
+            audioManager.stopRecord();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(activityFP != null)
+            activityFP.stopFeatureProcessing();
+    }
+
+    public void saveRecordedFiles(String fileName) throws IOException {
+        if(!initialized || audioManager == null)
+            throw new IllegalStateException("You must call a create method before calling start/stop or save!");
+        audioManager.saveWaveFiles(fileName);
+    }
 }

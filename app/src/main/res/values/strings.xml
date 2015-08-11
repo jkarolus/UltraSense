@@ -33,5 +33,7 @@
     <string name="button_stop_activity_detection">Stop Activity Detection</string>
     <string name="app_name_example">UltraSenseEx</string>
     <string name="pref_ignore_settings_warning">Ignore Settings Warning</string>
+    <string name="pref_key_ignore_noise">Ignore Noise</string>
+    <string name="pref_max_feat_threshold">Max Feature Threshold (when ignoring noise) </string>
 
 </resources>

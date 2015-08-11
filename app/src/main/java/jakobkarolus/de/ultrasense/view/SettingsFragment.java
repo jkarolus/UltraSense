@@ -42,9 +42,10 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     public static final String KEY_HIGH_FEAT_THRESHOLD = "pref_key_feat_high_threshold";
     public static final String KEY_LOW_FEAT_THRESHOLD = "pref_key_feat_low_threshold";
     public static final String KEY_FEAT_SLACK = "pref_key_feat_slack";
+    public static final String KEY_CW_IGNORE_NOISE = "pref_key_ignore_noise";
+    public static final String KEY_CW_MAX_FEAT_THRESHOLD = "pref_max_feat_threshold";
 
     public static final String SETTINGS_WARNING_IGNORE = "pref_ignore_settings_warning";
-
 
 
 
@@ -66,7 +67,7 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
         if(!ignoreWarning) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             builder.setTitle("Important!");
-            builder.setMessage("Parameter changes only influence the Recording functionality!");
+            builder.setMessage("Changes on CW/FMCW or feature detection parameters only influence the Recording functionality!\nDetection will still use other default values!");
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -137,7 +138,6 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
         menu.findItem(R.id.action_settings).setVisible(false);
         menu.findItem(R.id.action_compute_stft).setVisible(false);
         menu.findItem(R.id.action_show_last).setVisible(false);
-        menu.findItem(R.id.action_test_detection).setVisible(false);
         menu.findItem(R.id.action_update_debug_info).setVisible(false);
     }
 

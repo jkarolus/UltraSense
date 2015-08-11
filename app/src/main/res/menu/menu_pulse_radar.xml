@@ -5,9 +5,6 @@
         android:orderInCategory="100" app:showAsAction="ifRoom"
         android:icon="@mipmap/action_settings"/>
 
-    <item android:id="@+id/action_test_detection" android:title="Test Detection"
-        android:orderInCategory="100" app:showAsAction="never" />
-
     <item android:id="@+id/action_compute_stft" android:title="Compute STFT"
         android:orderInCategory="100" app:showAsAction="never" />
 

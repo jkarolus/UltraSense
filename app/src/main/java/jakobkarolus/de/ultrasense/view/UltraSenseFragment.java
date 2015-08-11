@@ -9,7 +9,6 @@ import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -28,48 +27,24 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 
 import jakobkarolus.de.ultrasense.R;
 import jakobkarolus.de.ultrasense.UltraSenseModule;
-import jakobkarolus.de.ultrasense.algorithm.AlgoHelper;
 import jakobkarolus.de.ultrasense.algorithm.StftManager;
-import jakobkarolus.de.ultrasense.audio.AudioManager;
-import jakobkarolus.de.ultrasense.audio.CWSignalGenerator;
-import jakobkarolus.de.ultrasense.audio.FMCWSignalGenerator;
-import jakobkarolus.de.ultrasense.audio.SignalGenerator;
-import jakobkarolus.de.ultrasense.features.DummyFeatureDetector;
-import jakobkarolus.de.ultrasense.features.FeatureDetector;
-import jakobkarolus.de.ultrasense.features.GaussianFE;
-import jakobkarolus.de.ultrasense.features.MeanBasedFD;
-import jakobkarolus.de.ultrasense.features.TestDataGestureFP;
-import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
-import jakobkarolus.de.ultrasense.features.activities.BedFallAE;
 import jakobkarolus.de.ultrasense.features.activities.InferredContext;
 import jakobkarolus.de.ultrasense.features.activities.InferredContextCallback;
-import jakobkarolus.de.ultrasense.features.activities.WorkdeskPresenceAE;
 import jakobkarolus.de.ultrasense.features.gestures.CalibrationState;
-import jakobkarolus.de.ultrasense.features.gestures.DownUpGE;
 import jakobkarolus.de.ultrasense.features.gestures.Gesture;
 import jakobkarolus.de.ultrasense.features.gestures.GestureCallback;
 import jakobkarolus.de.ultrasense.features.gestures.GestureExtractor;
-import jakobkarolus.de.ultrasense.features.gestures.GestureFP;
-import jakobkarolus.de.ultrasense.features.gestures.SwipeGE;
 
 /**
  * Created by Jakob on 25.05.2015.
@@ -81,9 +56,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
     public static final double SAMPLE_RATE = 44100.0;
 
-    private AudioManager audioManager;
     private StftManager stftManager;
-    private FeatureDetector featureDetector;
 
     private Button recordButton;
     private Button gestureDetectionButton;
@@ -92,15 +65,10 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     private Button computeStftButton;
     private Button showLastSpec;
     private Button calibrateButton;
-    private Button testDetection;
     private TextView countDownView;
     private View calibVisualFeedbackView;
     private View rootView;
     private TextView debugInfo;
-    private boolean usePreCalibration=true;
-
-    private GestureFP gestureFP;
-    private ActivityFP activityFP;
 
     UltraSenseModule ultraSenseModule;
 
@@ -109,7 +77,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ultraSenseModule = new UltraSenseModule(getActivity());
-        audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
         setHasOptionsMenu(true);
     }
@@ -122,7 +89,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         gestureDetectionButton = (Button) rootView.findViewById(R.id.button_start_detection);
         computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
         showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
-        testDetection = (Button) rootView.findViewById(R.id.button_test_detection);
         calibrateButton = (Button) rootView.findViewById(R.id.button_calibrate);
         countDownView = (TextView) rootView.findViewById(R.id.text_countdown);
         calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
@@ -142,7 +108,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startDetection();
+                startGestureDetection();
             }
         });
         computeStftButton.setOnClickListener(new View.OnClickListener() {
@@ -155,17 +121,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             @Override
             public void onClick(View v) {
                 showLastSpec();
-            }
-        });
-        testDetection.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    testDetection();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         });
         calibrateButton.setOnClickListener(new View.OnClickListener() {
@@ -184,6 +139,72 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         return rootView;
     }
 
+
+    /*
+     * Gesture detection
+     */
+    private void startGestureDetection() {
+
+        //show a dialog for letting the user decide the env noise
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Environment");
+        builder.setItems(new String[]{"Silent", "Noisy"}, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int index) {
+
+                boolean usePrecalibrated = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
+                ultraSenseModule.createGestureDetector(UltraSenseFragment.this, (index == 1), usePrecalibrated);
+
+                //save it for comparison -> the features
+                if (ultraSenseModule.getGestureFP() != null)
+                    ultraSenseModule.getGestureFP().startFeatureWriter();
+
+                changeDetectionButton(true);
+                ultraSenseModule.startDetection();
+                updateDebugInfo();
+            }
+        });
+        builder.show();
+
+    }
+
+    private void stopGestureDetection() {
+        //save it for comparison -> the features
+        if(ultraSenseModule.getGestureFP() != null) {
+            ultraSenseModule.getGestureFP().closeFeatureWriter();
+        }
+
+        changeDetectionButton(false);
+        ultraSenseModule.stopDetection();
+    }
+
+    private void changeDetectionButton(boolean isDetecting){
+
+        if(isDetecting){
+            gestureDetectionButton.setText(R.string.button_stop_detection);
+            gestureDetectionButton.setBackgroundColor(Color.RED);
+            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    stopGestureDetection();
+                }
+            });
+        }
+        else{
+            gestureDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
+            gestureDetectionButton.setText(R.string.button_start_detection);
+            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startGestureDetection();
+                }
+            });
+        }
+    }
+
+    /*
+     * Activity detection
+     */
     private void startActivityDetection() {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -235,6 +256,10 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
     }
 
+
+    /*
+     * Calibration
+     */
     private void startCalibration() {
 
         //show a dialog for letting the user decide the env noise
@@ -244,7 +269,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
-                final boolean noisy = (index==1);
+                final boolean noisy = (index == 1);
                 ultraSenseModule.createGestureDetector(UltraSenseFragment.this, noisy, false);
                 //ask for the GE
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -256,7 +281,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                         if (ultraSenseModule.getGestureFP() != null)
                             ultraSenseModule.getGestureFP().startFeatureWriter();
                         ultraSenseModule.getGestureFP().startCalibrating(ultraSenseModule.getGestureFP().getGestureExtractors().get(index), noisy);
-                        displayCountdownAndStartDetection();
+                        displayCountdownAndStartCalibrationRun();
                     }
                 });
                 builder.show();
@@ -266,7 +291,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         builder.show();
     }
 
-    private void displayCountdownAndStartDetection() {
+    private void displayCountdownAndStartCalibrationRun() {
 
         countDownView.setText("3");
         countDownView.setVisibility(View.VISIBLE);
@@ -285,30 +310,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             }
         }.start();
 
-    }
-
-    private void changeDetectionButton(boolean isDetecting){
-
-        if(isDetecting){
-            gestureDetectionButton.setText(R.string.button_stop_detection);
-            gestureDetectionButton.setBackgroundColor(Color.RED);
-            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    stopDetection();
-                }
-            });
-        }
-        else{
-            gestureDetectionButton.setBackgroundResource(android.R.drawable.btn_default);
-            gestureDetectionButton.setText(R.string.button_start_detection);
-            gestureDetectionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    startDetection();
-                }
-            });
-        }
     }
 
     @Override
@@ -341,7 +342,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                                 @Override
                                 public void run() {
                                     calibVisualFeedbackView.setVisibility(View.INVISIBLE);
-                                    displayCountdownAndStartDetection();
+                                    displayCountdownAndStartCalibrationRun();
                                 }
                             });
                             timer.cancel();
@@ -350,50 +351,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                 }
             }
         });
-    }
-
-    private void stopDetection() {
-        //save it for comparison -> the features
-        if(ultraSenseModule.getGestureFP() != null) {
-            ultraSenseModule.getGestureFP().closeFeatureWriter();
-        }
-
-        changeDetectionButton(false);
-        ultraSenseModule.stopDetection();
-    }
-
-    private void startDetection() {
-
-        //show a dialog for letting the user decide the env noise
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Environment");
-        builder.setItems(new String[]{"Silent", "Noisy"}, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int index) {
-
-                boolean usePrecalibrated = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
-                ultraSenseModule.createGestureDetector(UltraSenseFragment.this, (index == 1), usePrecalibrated);
-
-                //save it for comparison -> the features
-                if (ultraSenseModule.getGestureFP() != null)
-                    ultraSenseModule.getGestureFP().startFeatureWriter();
-
-                changeDetectionButton(true);
-                ultraSenseModule.startDetection();
-                updateDebugInfo();
-            }
-        });
-        builder.show();
-
-    }
-
-    private void testDetection() throws IOException {
-
-        setUpSignalAndFeatureStuff(true, false, false, 0, false);
-
-        new TestDetectionTask().execute();
-
-
     }
 
     @Override
@@ -444,6 +401,11 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         });
     }
 
+
+    /*
+     * callback implementations
+     */
+
     @Override
     public void onGestureDetected(final Gesture gesture) {
 
@@ -459,70 +421,60 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     @Override
     public void onInferredContextChange(InferredContext oldContext, InferredContext newContext, String reason) {
 
-        Log.i("CONTEXT", "Changed from " + oldContext + " to " + newContext +": " + reason);
+        Log.i("CONTEXT", "Changed from " + oldContext + " to " + newContext + ": " + reason);
 
     }
 
-    private class TestDetectionTask extends AsyncTask<Void, String, Void> {
 
-        private ProgressDialog pd;
+    /*
+     * Recording to file
+     */
 
-        @Override
-        protected void onPreExecute() {
-            pd = ProgressDialog.show(getActivity(), "Testing Detection", "Please wait", true, false);
-        }
+    private void startRecord() throws IOException {
 
-        @Override
-        protected void onProgressUpdate(String... values) {
-            pd.setMessage(values[0]);
-        }
+        ultraSenseModule.createCustomScenario(PreferenceManager.getDefaultSharedPreferences(getActivity()));
+        updateDebugInfo();
 
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            pd.dismiss();
-            gestureFP.closeFeatureWriter();
-
-        }
-
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            try {
-
-                //save it for comparison -> the features
-                gestureFP.startFeatureWriter();
-
-                List<Double> dataList = new Vector<>();
-                DataInputStream din = new DataInputStream(new FileInputStream(fileDir + "testing/up_down_s3.bin"));
-                boolean notEnded = true;
-
-                publishProgress(new String[]{"Reading values"});
-                while (notEnded) {
-                    try {
-                        dataList.add(din.readDouble());;
-                    } catch (EOFException e) {
-                        notEnded = false;
-                    }
-                }
-                double[] data = new double[dataList.size()];
-                for (int i = 0; i < data.length; i++)
-                    data[i] = dataList.get(i);
-
-                publishProgress(new String[]{"Calculating features"});
-                int length = 4 * 4096;
-                double[] buffer = new double[length];
-                for (int i = 0; i <= data.length - length; i += length) {
-                    System.arraycopy(data, i, buffer, 0, length);
-                    featureDetector.checkForFeatures(buffer, false);
+        recordButton.setText(R.string.button_stop_record);
+        recordButton.setBackgroundColor(Color.RED);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    stopRecord();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-            catch(IOException e){
-                e.printStackTrace();
-            }
-            return null;
-        }
+        });
+        ultraSenseModule.startRecord();
     }
+
+
+    private void stopRecord() throws IOException {
+
+        recordButton.setText(R.string.button_start_record);
+        recordButton.setBackgroundResource(android.R.drawable.btn_default);
+        recordButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    startRecord();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        computeStftButton.setEnabled(true);
+        ultraSenseModule.stopRecord();
+
+
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        AskForFileNameDialog fileNameDialog = new AskForFileNameDialog();
+        fileNameDialog.show(ft, "FileNameDialog");
+    }
+
+
 
     private void showLastSpec() {
         if(lastSpectrogram != null) {
@@ -542,7 +494,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
 
     private void computeStft() {
-        if(audioManager.hasRecordData()) {
+        if(ultraSenseModule.getAudioManager().hasRecordData()) {
             new ComputeSTFTTask().execute();
         }
         else{
@@ -550,61 +502,14 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         }
     }
 
-    private void startRecord() throws IOException {
-
-        setUpSignalAndFeatureStuff(false, false, false, 0, false);
-
-        recordButton.setText(R.string.button_stop_record);
-        recordButton.setBackgroundColor(Color.RED);
-        recordButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    stopRecord();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        audioManager.startRecord();
-    }
 
 
-    private void stopRecord() throws IOException {
-
-        recordButton.setText(R.string.button_start_record);
-        recordButton.setBackgroundResource(android.R.drawable.btn_default);
-        recordButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    startRecord();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        computeStftButton.setEnabled(true);
-        audioManager.stopRecord();
-
-
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
-        AskForFileNameDialog fileNameDialog = new AskForFileNameDialog();
-        fileNameDialog.show(ft, "FileNameDialog");
-    }
-
-    private void setUpSignalAndFeatureStuff(boolean testData, boolean isCalibrating, boolean activityDetection, int activityIndex, boolean noisy){
-        SignalGenerator signalGen = getSignalGeneratorForMode(PreferenceManager.getDefaultSharedPreferences(getActivity()));
-        audioManager.setSignalGenerator(signalGen);
-        initializeFeatureDetector(testData, isCalibrating, activityDetection, activityIndex, noisy);
-    }
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_settings).setVisible(true);
         menu.findItem(R.id.action_compute_stft).setVisible(true);
         menu.findItem(R.id.action_show_last).setVisible(true);
-        menu.findItem(R.id.action_test_detection).setVisible(true);
         menu.findItem(R.id.action_update_debug_info).setVisible(true);
 
     }
@@ -613,15 +518,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
-
-        if (id == R.id.action_test_detection) {
-            try {
-                testDetection();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return true;
-        }
 
         if (id == R.id.action_compute_stft) {
             computeStft();
@@ -641,82 +537,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     }
 
 
-    private void initializeFeatureDetector(boolean testData, boolean isCalibrating, boolean activityDetection, int activityIndex, boolean noisy) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
-        try{
-            if(mode.equals(SettingsFragment.CW_MODE)){
-                int fftLength = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_FFT_LENGTH, ""));
-                double hopSizeFraction = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_HOPSIZE, ""));
-                int hopSize = (int) (hopSizeFraction * fftLength);
-                int halfCarrierWidth = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_HALF_CARRIER_WIDTH, ""));
-                double dbThreshold = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_DB_THRESHOLD, ""));
-                double highFeatureThr = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_HIGH_FEAT_THRESHOLD, ""));
-                double lowFeatureThr = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_LOW_FEAT_THRESHOLD, ""));
-                int slackWidth = Integer.parseInt(sharedPreferences.getString(SettingsFragment.KEY_FEAT_SLACK, ""));
-                double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
-                usePreCalibration = sharedPreferences.getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
-
-                if(!activityDetection) {
-                    if(!noisy)
-                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), false, 0.0);
-                    else
-                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 3, -50.0, 3, 2, 1, AlgoHelper.getHannWindow(fftLength), true, 20);
-
-                }
-                else{
-                    //use predefined values for activity recognition
-                    if(activityIndex == 0)
-                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true, 8.0);
-                    else
-                        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, 5, -60.0, 2.0, 1.0, 5, AlgoHelper.getHannWindow(fftLength), true, 20.0);
-                }
-
-            }
-            else
-                featureDetector = new DummyFeatureDetector(0.0);
-
-        }catch (NumberFormatException e) {
-            Toast.makeText(getActivity(), "Specified Parameters are not valid!", Toast.LENGTH_LONG).show();
-            featureDetector = new DummyFeatureDetector(0.0);
-        }
-
-        if(testData)
-            gestureFP = new TestDataGestureFP(this, getActivity());
-        else
-            gestureFP = new GestureFP(this);
-
-        if(!activityDetection) {
-            //TODO: GesturesExtractors as preferences?
-            List<GestureExtractor> gestureExtractors = new Vector<>();
-            //gestureExtractors.add(new DownGE());
-            //gestureExtractors.add(new UpGE());
-            gestureExtractors.add(new DownUpGE());
-            gestureExtractors.add(new SwipeGE());
-
-            for (GestureExtractor ge : gestureExtractors) {
-                if (!usePreCalibration)
-                    initializeGEThresholds(ge);
-                gestureFP.registerGestureExtractor(ge);
-            }
-            featureDetector.registerFeatureExtractor(new GaussianFE(gestureFP));
-
-        }
-        else{
-            activityFP = new ActivityFP();
-            if(activityIndex==0)
-                activityFP.registerActivityExtractor(new WorkdeskPresenceAE(this));
-            else
-                activityFP.registerActivityExtractor(new BedFallAE(this));
-
-            featureDetector.registerFeatureExtractor(new GaussianFE(activityFP));
-        }
-
-        updateDebugInfo();
-        audioManager.setFeatureDetector(featureDetector);
-
-
-    }
 
     private void updateDebugInfo() {
         StringBuffer buffer = new StringBuffer();
@@ -732,45 +552,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         debugInfo.setText(buffer.toString());
     }
 
-    private boolean initializeGEThresholds(GestureExtractor ge) {
-        try {
-            ObjectInputStream in = new ObjectInputStream(getActivity().openFileInput(ge.getName() + ".calib"));
-            Map<String, Double> thresholds = (HashMap<String, Double>) in.readObject();
-            return ge.setThresholds(thresholds);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (StreamCorruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
-
-    private SignalGenerator getSignalGeneratorForMode(SharedPreferences sharedPreferences) {
-        String mode = sharedPreferences.getString(SettingsFragment.PREF_MODE, "CW");
-        try {
-            if(mode.equals(SettingsFragment.FMCW_MODE)) {
-                double botFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_BOT_FREQ, ""));
-                double topFreq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_TOP_FREQ, ""));
-                double chirpDur = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_CHIRP_DUR, ""));
-                double chirpCycles = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_FMCW_CHIRP_CYCLES, ""));
-                boolean rampUp = sharedPreferences.getBoolean(SettingsFragment.KEY_FMCW_RAMP_UP, false);
-
-                return new FMCWSignalGenerator(topFreq, botFreq, chirpDur, chirpCycles, 44100, 1.0f, !rampUp);
-            }
-            else {
-                double freq = Double.parseDouble(sharedPreferences.getString(SettingsFragment.KEY_CW_FREQ, ""));
-                return new CWSignalGenerator(freq, 0.1, 1.0, 44100);
-            }
-        }catch (NumberFormatException e) {
-            Toast.makeText(getActivity(), "Specified Parameters are not valid! Using defaults!", Toast.LENGTH_LONG).show();
-            return new CWSignalGenerator(20000, 0.1, 1.0, 44100);
-        }
-    }
 
 
     private class ComputeSTFTTask extends AsyncTask<Void, String, Void> {
@@ -810,7 +592,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
         @Override
         protected Void doInBackground(Void... params) {
-            double[] data = audioManager.getRecordData(true);
+            double[] data = ultraSenseModule.getAudioManager().getRecordData(true);
             if(data.length != 0) {
                 stftManager.setData(data);
                 publishProgress("Applying high pass filter");
@@ -869,14 +651,14 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             LayoutInflater inflater = getActivity().getLayoutInflater();
             final View view = inflater.inflate(R.layout.dialog_record_name,	null);
             final EditText fileName = (EditText) view.findViewById(R.id.input_filename_record);
-            fileName.setText("test");
+            fileName.setText("");
             builder.setView(view);
             builder.setPositiveButton(R.string.ok,
                     new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
                             try {
-                                audioManager.saveWaveFiles(fileName.getText().toString());
+                                ultraSenseModule.saveRecordedFiles(fileName.getText().toString());
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -909,7 +691,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             menu.findItem(R.id.action_settings).setVisible(false);
             menu.findItem(R.id.action_compute_stft).setVisible(false);
             menu.findItem(R.id.action_show_last).setVisible(false);
-            menu.findItem(R.id.action_test_detection).setVisible(false);
             menu.findItem(R.id.action_update_debug_info).setVisible(false);
 
         }
