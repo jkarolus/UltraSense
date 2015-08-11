@@ -108,18 +108,26 @@ public class GestureFP extends FeatureProcessor {
 
             if(calibrationRuns < MAX_CALIBRATION_RUNS){
                 CalibrationState calibState = calibrator.calibrate(getFeatures());
+                Log.e("CALIB", "calibrate()");
 
                 if(calibState == CalibrationState.SUCCESSFUL) {
                     calibrationRuns++;
-                }
-                if(calibrationRuns < MAX_CALIBRATION_RUNS)
-                    gestureCallback.onCalibrationStep(calibState);
+                    Log.e("CALIB_STATE", calibState.toString());
 
-            }
-            else{
-                //calibration finished
-                gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
-                isCalibrating = false;
+                }
+                if(calibrationRuns < MAX_CALIBRATION_RUNS) {
+                    gestureCallback.onCalibrationStep(calibState);
+                    Log.e("CALIB", "onCalibrationStep()");
+
+                }
+                else{
+                    //calibration finished
+                    Log.e("TRESHOLDS_BEFORE", calibrator.getThresholds());
+                    calibrator.finishCalibration();
+                    gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
+                    isCalibrating = false;
+                }
+
             }
         }
 

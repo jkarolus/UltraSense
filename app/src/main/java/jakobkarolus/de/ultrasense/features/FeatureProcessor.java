@@ -85,7 +85,7 @@ public abstract class FeatureProcessor {
                     try {
                         featWriter.write(feature.getTime() + "," + feature.getLength() + "," + feature.getWeight() + "\n");
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        //feature detection was already closed when this feature came in
                     }
                 }
             });

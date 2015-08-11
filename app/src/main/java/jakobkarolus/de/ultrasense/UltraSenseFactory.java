@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import jakobkarolus.de.ultrasense.algorithm.AlgoHelper;
-import jakobkarolus.de.ultrasense.algorithm.CWSignalGenerator;
+import jakobkarolus.de.ultrasense.audio.CWSignalGenerator;
 import jakobkarolus.de.ultrasense.audio.AudioManager;
 import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;

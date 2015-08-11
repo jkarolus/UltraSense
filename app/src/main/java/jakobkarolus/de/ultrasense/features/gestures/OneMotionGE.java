@@ -93,6 +93,22 @@ public abstract class OneMotionGE implements GestureExtractor{
     }
 
     @Override
+    public void finishCalibration() {
+        //slightly increase the thresholds to cope with variations
+        featureLengthMinThr = Math.max(0.01, featureLengthMinThr - 0.02);
+        featureLengthMaxThr = featureLengthMaxThr + 0.02;
+        if(featureWeightMaxThr > 0.0){
+            featureWeightMinThr = Math.max(0.1, featureWeightMinThr - 0.3);
+            featureWeightMaxThr = featureWeightMaxThr + 0.3;
+        }
+        else{
+            featureWeightMaxThr = Math.min(-0.1, featureWeightMaxThr + 0.3);
+            featureWeightMinThr = featureWeightMinThr - 0.3;
+        }
+
+    }
+
+    @Override
     public String getThresholds(){
         return "Length: " + df.format(featureLengthMinThr) + " <-> " + df.format(featureLengthMaxThr) + "; Weight: " + df.format(featureWeightMinThr) + " <-> " + df.format(featureWeightMaxThr) + "\n";
     }

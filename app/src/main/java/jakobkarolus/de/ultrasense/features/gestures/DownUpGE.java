@@ -29,18 +29,37 @@ public class DownUpGE extends TwoMotionGE{
      private static final double TIME_DIST_MAX = 0.9;//0.63;
      */
 
+    /*
     private static final double F1_LENGTH_MIN = 0.08;
     private static final double F1_LENGTH_MAX = 0.18;
     private static final double F1_WEIGHT_MIN = 2.8;
     private static final double F1_WEIGHT_MAX = 4.7;
 
     private static final double F2_LENGTH_MIN = 0.08;
-    private static final double F2_LENGTH_MAX = 1.9;
+    private static final double F2_LENGTH_MAX = 0.18;
     private static final double F2_WEIGHT_MIN = -4.8;
     private static final double F2_WEIGHT_MAX = -3.1;
 
     private static final double TIME_DIST_MIN = 0.34;
     private static final double TIME_DIST_MAX = 0.63;
+    */
+
+
+    /**
+     * noisy env
+     */
+    private static final double F1_LENGTH_MIN = 0.06;
+    private static final double F1_LENGTH_MAX = 0.18;
+    private static final double F1_WEIGHT_MIN = 1.65;
+    private static final double F1_WEIGHT_MAX = 4.7; //4.3 for only noisy
+
+    private static final double F2_LENGTH_MIN = 0.08;
+    private static final double F2_LENGTH_MAX = 0.18;
+    private static final double F2_WEIGHT_MIN = -4.8; //-4.3
+    private static final double F2_WEIGHT_MAX = -2.0;
+
+    private static final double TIME_DIST_MIN = 0.30;
+    private static final double TIME_DIST_MAX = 0.8;
 
 
     public DownUpGE(){

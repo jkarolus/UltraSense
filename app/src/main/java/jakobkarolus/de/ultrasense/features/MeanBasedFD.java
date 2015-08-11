@@ -92,6 +92,15 @@ public class MeanBasedFD extends FeatureDetector{
 
     }
 
+    @Override
+    public String printParameters() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("FD parameters:\n");
+        buffer.append("thr: " + magnitudeThreshold + ", high: " + featHighThreshold + ", low: " + featLowThreshold + ", halfWidth: " + halfCarrierWidth);
+        buffer.append(", slack: " + featSlackWidth + ", max: " + maxFeatureThreshold);
+        return buffer.toString();
+    }
+
     private void processFeatureValue(UnrefinedFeature uF, double valueForTimeStep, boolean isHighDoppler) {
         if(valueForTimeStep >= featHighThreshold){
             if(!uF.hasStarted()){

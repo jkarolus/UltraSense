@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import jakobkarolus.de.ultrasense.algorithm.SignalGenerator;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;
 
 /**

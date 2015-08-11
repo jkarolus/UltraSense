@@ -26,7 +26,7 @@ public class SwipeGE extends TwoMotionGE{
     private static final double TIME_DIST_MAX = 0.28;
     */
 
-    /**noisy env
+    /**noisy env, allso works good for silent env (they use different FD paras though)
      *
      */
     private static final double F1_LENGTH_MIN = 0.02;

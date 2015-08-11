@@ -100,4 +100,10 @@ public abstract class FeatureDetector {
         this.time += timeIncreasePerStep;
     }
 
+    /**
+     *
+     * @return a String representation of the internal parameters used for feature detection
+     */
+    public abstract String printParameters();
+
 }

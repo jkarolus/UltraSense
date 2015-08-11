@@ -78,4 +78,10 @@ public interface GestureExtractor {
      * @return true if feature is possible; otherwise false (e.g. low doppler and down feature)
      */
     public abstract boolean doSanityCalibrationCheck(List<Feature> features);
+
+    /**
+     * gets called upon finishing the calibration.<br>
+     * GestureExtractor may combine the collected thresholds during calibration into the final ones
+     */
+    public abstract void finishCalibration();
 }

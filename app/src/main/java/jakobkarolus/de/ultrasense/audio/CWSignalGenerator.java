@@ -1,4 +1,4 @@
-package jakobkarolus.de.ultrasense.algorithm;
+package jakobkarolus.de.ultrasense.audio;
 
 import android.util.FloatMath;
 

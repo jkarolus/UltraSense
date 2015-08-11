@@ -1,4 +1,4 @@
-package jakobkarolus.de.ultrasense.algorithm;
+package jakobkarolus.de.ultrasense.audio;
 
 /**
  * Created by Jakob on 27.05.2015.

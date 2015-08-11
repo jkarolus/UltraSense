@@ -15,4 +15,9 @@ public class DummyFeatureDetector extends FeatureDetector{
         //do nothing
 
     }
+
+    @Override
+    public String printParameters() {
+        return "FD paras: Dummy";
+    }
 }

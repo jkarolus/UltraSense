@@ -10,6 +10,11 @@ import java.util.Vector;
 import jakobkarolus.de.ultrasense.features.Feature;
 
 /**
+ * abstracts over gesture that consist of two consecutive doppler motions (e.g. swipes).<br>
+ * These gesture can be classified using their extend/length and weight of the respective doppler motion
+ * and the distance between these.
+ *
+ * <br><br>
  * Created by Jakob on 08.07.2015.
  */
 public abstract class TwoMotionGE implements GestureExtractor{
@@ -123,6 +128,30 @@ public abstract class TwoMotionGE implements GestureExtractor{
         if(f.getWeight() >= ft.getFeatureWeightMaxThr())
             ft.setFeatureWeightMaxThr(f.getWeight());
 
+    }
+
+    @Override
+    public void finishCalibration() {
+        //slightly increase the thresholds to cope with variations
+        adjustFeatureThresholdsAfterCalibration(featureOneThresholds);
+        adjustFeatureThresholdsAfterCalibration(featureTwoThresholds);
+        featureTimeDistanceMinThr = Math.max(0.01, featureTimeDistanceMinThr - 0.05);
+        featureTimeDistanceMaxThr = featureTimeDistanceMaxThr + 0.05;
+
+
+    }
+
+    private void adjustFeatureThresholdsAfterCalibration(FeatureThresholds ft){
+        ft.setFeatureLengthMinThr(Math.max(0.01, ft.getFeatureLengthMinThr() - 0.02));
+        ft.setFeatureLengthMaxThr(ft.getFeatureLengthMaxThr() + 0.02);
+        if(ft.getFeatureWeightMaxThr() > 0.0){
+            ft.setFeatureWeightMinThr(Math.max(0.1, ft.getFeatureWeightMinThr() - 0.3));
+            ft.setFeatureWeightMaxThr(ft.getFeatureWeightMaxThr() + 0.3);
+        }
+        else{
+            ft.setFeatureWeightMaxThr(Math.min(-0.1, ft.getFeatureWeightMaxThr() + 0.3));
+            ft.setFeatureWeightMinThr(ft.getFeatureWeightMinThr() - 0.3);
+        }
     }
 
     @Override
