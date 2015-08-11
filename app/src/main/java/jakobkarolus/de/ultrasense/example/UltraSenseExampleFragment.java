@@ -19,7 +19,7 @@ import java.io.InputStreamReader;
 import java.util.Map;
 
 import jakobkarolus.de.ultrasense.R;
-import jakobkarolus.de.ultrasense.UltraSenseFactory;
+import jakobkarolus.de.ultrasense.UltraSenseModule;
 import jakobkarolus.de.ultrasense.features.activities.InferredContext;
 import jakobkarolus.de.ultrasense.features.activities.InferredContextCallback;
 import jakobkarolus.de.ultrasense.features.gestures.CalibrationState;
@@ -36,13 +36,13 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
     private Button gestureDetectionButton;
     private Button activityDetectionButton;
     private TextView tvLogcat;
-    private UltraSenseFactory ultraSenseFactory;
+    private UltraSenseModule ultraSenseModule;
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.ultraSenseFactory = new UltraSenseFactory(getActivity());
+        this.ultraSenseModule = new UltraSenseModule(getActivity());
     }
 
     @Override
@@ -98,9 +98,9 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
             public void onClick(DialogInterface dialog, int index) {
 
                 if (index == 0)
-                    ultraSenseFactory.createWorkdeskPresenceDetector(UltraSenseExampleFragment.this);
+                    ultraSenseModule.createWorkdeskPresenceDetector(UltraSenseExampleFragment.this);
                 else
-                    ultraSenseFactory.createBedFallDetector(UltraSenseExampleFragment.this);
+                    ultraSenseModule.createBedFallDetector(UltraSenseExampleFragment.this);
 
                 activityDetectionButton.setText(R.string.button_stop_activity_detection);
                 activityDetectionButton.setBackgroundColor(Color.RED);
@@ -110,7 +110,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
                         stopActivityDetection();
                     }
                 });
-                ultraSenseFactory.startDetection();
+                ultraSenseModule.startDetection();
             }
         });
         builder.show();
@@ -126,7 +126,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
                 startActivityDetection();
             }
         });
-        ultraSenseFactory.stopDetection();
+        ultraSenseModule.stopDetection();
     }
 
     private void startGestureDetection() {
@@ -146,7 +146,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
-                ultraSenseFactory.createGestureDetector(UltraSenseExampleFragment.this, (index==1), true);
+                ultraSenseModule.createGestureDetector(UltraSenseExampleFragment.this, (index==1), true);
 
                 gestureDetectionButton.setText(R.string.button_stop_detection);
                 gestureDetectionButton.setBackgroundColor(Color.RED);
@@ -156,7 +156,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
                         stopGestureDetection();
                     }
                 });
-                ultraSenseFactory.startDetection();
+                ultraSenseModule.startDetection();
             }
         });
         builder.show();
@@ -171,7 +171,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
                 startGestureDetection();
             }
         });
-        ultraSenseFactory.stopDetection();
+        ultraSenseModule.stopDetection();
     }
 
     private void updateLog() {

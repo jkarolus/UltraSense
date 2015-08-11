@@ -26,12 +26,14 @@ public class GestureFP extends FeatureProcessor {
     private GestureCallback gestureCallback;
     private int calibrationRuns;
     private boolean isCalibrating;
+    private boolean noisy;
     private GestureExtractor calibrator;
 
     public GestureFP(GestureCallback gestureCallback){
         this.gestureCallback = gestureCallback;
         gestureExtractors = new Vector<>();
         isCalibrating = false;
+        noisy = false;
         calibrationRuns = 0;
     }
 
@@ -62,11 +64,12 @@ public class GestureFP extends FeatureProcessor {
         return names;
     }
 
-    public void startCalibrating(GestureExtractor ge){
+    public void startCalibrating(GestureExtractor ge, boolean noisy){
         this.calibrator = ge;
         this.calibrator.resetThresholds();
         calibrationRuns = 0;
         isCalibrating = true;
+        this.noisy = noisy;
     }
 
 
@@ -108,23 +111,19 @@ public class GestureFP extends FeatureProcessor {
 
             if(calibrationRuns < MAX_CALIBRATION_RUNS){
                 CalibrationState calibState = calibrator.calibrate(getFeatures());
-                Log.e("CALIB", "calibrate()");
 
                 if(calibState == CalibrationState.SUCCESSFUL) {
                     calibrationRuns++;
-                    Log.e("CALIB_STATE", calibState.toString());
 
                 }
                 if(calibrationRuns < MAX_CALIBRATION_RUNS) {
                     gestureCallback.onCalibrationStep(calibState);
-                    Log.e("CALIB", "onCalibrationStep()");
 
                 }
                 else{
                     //calibration finished
-                    Log.e("TRESHOLDS_BEFORE", calibrator.getThresholds());
                     calibrator.finishCalibration();
-                    gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName());
+                    gestureCallback.onCalibrationFinished(calibrator.getThresholdMap(), calibrator.getThresholds(), calibrator.getName() + (noisy ? "_noisy" : ""));
                     isCalibrating = false;
                 }
 

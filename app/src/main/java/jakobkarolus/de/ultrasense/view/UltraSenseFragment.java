@@ -46,6 +46,7 @@ import java.util.TimerTask;
 import java.util.Vector;
 
 import jakobkarolus.de.ultrasense.R;
+import jakobkarolus.de.ultrasense.UltraSenseModule;
 import jakobkarolus.de.ultrasense.algorithm.AlgoHelper;
 import jakobkarolus.de.ultrasense.algorithm.StftManager;
 import jakobkarolus.de.ultrasense.audio.AudioManager;
@@ -101,10 +102,13 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     private GestureFP gestureFP;
     private ActivityFP activityFP;
 
+    UltraSenseModule ultraSenseModule;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ultraSenseModule = new UltraSenseModule(getActivity());
         audioManager = new AudioManager(getActivity());
         stftManager = new StftManager();
         setHasOptionsMenu(true);
@@ -124,7 +128,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
         debugInfo = (TextView) rootView.findViewById(R.id.text_debug_info);
         activityDetectionButton = (Button) rootView.findViewById(R.id.button_start_activity_detection);
-        updateDebugInfo();
 
         recordButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -189,11 +192,14 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
-                setUpSignalAndFeatureStuff(false, false, true, index, false);
+                if (index == 0)
+                    ultraSenseModule.createWorkdeskPresenceDetector(UltraSenseFragment.this);
+                else
+                    ultraSenseModule.createBedFallDetector(UltraSenseFragment.this);
 
                 //save it for comparison -> the features
-                if (activityFP != null)
-                    activityFP.startFeatureWriter();
+                if (ultraSenseModule.getActivityFP() != null)
+                    ultraSenseModule.getActivityFP().startFeatureWriter();
 
                 activityDetectionButton.setText(R.string.button_stop_activity_detection);
                 activityDetectionButton.setBackgroundColor(Color.RED);
@@ -203,7 +209,8 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                         stopActivityDetection();
                     }
                 });
-                audioManager.startDetection();
+                ultraSenseModule.startDetection();
+                updateDebugInfo();
             }
         });
         builder.show();
@@ -212,8 +219,8 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
     private void stopActivityDetection() {
         //save it for comparison -> the features
-        if(activityFP != null) {
-            activityFP.closeFeatureWriter();
+        if(ultraSenseModule.getActivityFP() != null) {
+            ultraSenseModule.getActivityFP().closeFeatureWriter();
         }
 
         activityDetectionButton.setText(R.string.button_start_activity_detection);
@@ -224,32 +231,39 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                 startActivityDetection();
             }
         });
-        audioManager.stopDetection();
-        activityFP.stopFeatureProcessing();
+        ultraSenseModule.stopDetection();
 
     }
 
     private void startCalibration() {
 
-        setUpSignalAndFeatureStuff(false, true, false, 0, false);
-
+        //show a dialog for letting the user decide the env noise
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Choose Gesture to calibrate (only silent env)");
-        builder.setItems(gestureFP.getGestureExtractorNames(), new DialogInterface.OnClickListener() {
+        builder.setTitle("Environment");
+        builder.setItems(new String[]{"Silent", "Noisy"}, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
+                final boolean noisy = (index==1);
+                ultraSenseModule.createGestureDetector(UltraSenseFragment.this, noisy, false);
+                //ask for the GE
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setTitle("Choose Gesture to calibrate");
+                builder.setItems(ultraSenseModule.getGestureFP().getGestureExtractorNames(), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int index) {
+                        //save it for comparison -> the features
+                        if (ultraSenseModule.getGestureFP() != null)
+                            ultraSenseModule.getGestureFP().startFeatureWriter();
+                        ultraSenseModule.getGestureFP().startCalibrating(ultraSenseModule.getGestureFP().getGestureExtractors().get(index), noisy);
+                        displayCountdownAndStartDetection();
+                    }
+                });
+                builder.show();
 
-                //save it for comparison -> the features
-                if (gestureFP != null)
-                    gestureFP.startFeatureWriter();
-                gestureFP.startCalibrating(gestureFP.getGestureExtractors().get(index));
-                displayCountdownAndStartDetection();
             }
         });
         builder.show();
-
-
     }
 
     private void displayCountdownAndStartDetection() {
@@ -267,7 +281,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             public void onFinish() {
                 countDownView.setVisibility(View.INVISIBLE);
                 changeDetectionButton(true);
-                audioManager.startDetection();
+                ultraSenseModule.startDetection();
             }
         }.start();
 
@@ -308,7 +322,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                 //only react on completed (successful or failed) calibration
                 if (calibState == CalibrationState.SUCCESSFUL || calibState == CalibrationState.FAILED) {
                     changeDetectionButton(false);
-                    audioManager.stopDetection();
+                    ultraSenseModule.stopDetection();
 
                     if (calibState == CalibrationState.SUCCESSFUL) {
                         calibVisualFeedbackView.setBackgroundColor(Color.GREEN);
@@ -340,12 +354,12 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
     private void stopDetection() {
         //save it for comparison -> the features
-        if(gestureFP != null) {
-            gestureFP.closeFeatureWriter();
+        if(ultraSenseModule.getGestureFP() != null) {
+            ultraSenseModule.getGestureFP().closeFeatureWriter();
         }
 
         changeDetectionButton(false);
-        audioManager.stopDetection();
+        ultraSenseModule.stopDetection();
     }
 
     private void startDetection() {
@@ -357,15 +371,16 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             @Override
             public void onClick(DialogInterface dialog, int index) {
 
-
-                setUpSignalAndFeatureStuff(false, false, false, 0, (index == 1));
+                boolean usePrecalibrated = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
+                ultraSenseModule.createGestureDetector(UltraSenseFragment.this, (index == 1), usePrecalibrated);
 
                 //save it for comparison -> the features
-                if (gestureFP != null)
-                    gestureFP.startFeatureWriter();
+                if (ultraSenseModule.getGestureFP() != null)
+                    ultraSenseModule.getGestureFP().startFeatureWriter();
 
                 changeDetectionButton(true);
-                audioManager.startDetection();
+                ultraSenseModule.startDetection();
+                updateDebugInfo();
             }
         });
         builder.show();
@@ -406,12 +421,12 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (gestureFP != null) {
-                    gestureFP.closeFeatureWriter();
+                if (ultraSenseModule.getGestureFP() != null) {
+                    ultraSenseModule.getGestureFP().closeFeatureWriter();
                 }
 
                 changeDetectionButton(false);
-                audioManager.stopDetection();
+                ultraSenseModule.stopDetection();
 
                 //setUpSignalAndFeatureStuff(false, false, false, 0, false);
                 updateDebugInfo();
@@ -539,10 +554,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
         setUpSignalAndFeatureStuff(false, false, false, 0, false);
 
-        //save it for comparison -> the features
-        if(gestureFP != null)
-            gestureFP.startFeatureWriter();
-
         recordButton.setText(R.string.button_stop_record);
         recordButton.setBackgroundColor(Color.RED);
         recordButton.setOnClickListener(new View.OnClickListener() {
@@ -560,11 +571,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
 
     private void stopRecord() throws IOException {
-
-        //save it for comparison -> the features
-        if(gestureFP != null) {
-            gestureFP.closeFeatureWriter();
-        }
 
         recordButton.setText(R.string.button_start_record);
         recordButton.setBackgroundResource(android.R.drawable.btn_default);
@@ -714,20 +720,16 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
     private void updateDebugInfo() {
         StringBuffer buffer = new StringBuffer();
+        if(ultraSenseModule != null){
+            buffer.append(ultraSenseModule.printFeatureDetectionParameters() + "\n\n");
+        }
 
-        if(featureDetector != null)
-            buffer.append(featureDetector.printParameters() + "\n\n");
-
-        if(gestureFP != null) {
-            for (GestureExtractor ge : gestureFP.getGestureExtractors()) {
+        if(ultraSenseModule.getGestureFP() != null) {
+            for (GestureExtractor ge : ultraSenseModule.getGestureFP().getGestureExtractors()) {
                 buffer.append(ge.getName() + ": " + ge.getThresholds() + "\n");
             }
         }
-
-        if(buffer.length() == 0)
-            debugInfo.setText("No Info on GEs available!\n");
-        else
-            debugInfo.setText(buffer.toString());
+        debugInfo.setText(buffer.toString());
     }
 
     private boolean initializeGEThresholds(GestureExtractor ge) {

@@ -1,5 +1,7 @@
 package jakobkarolus.de.ultrasense.view;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -9,6 +11,7 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.view.Menu;
+import android.view.View;
 
 import jakobkarolus.de.ultrasense.R;
 
@@ -40,6 +43,8 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     public static final String KEY_LOW_FEAT_THRESHOLD = "pref_key_feat_low_threshold";
     public static final String KEY_FEAT_SLACK = "pref_key_feat_slack";
 
+    public static final String SETTINGS_WARNING_IGNORE = "pref_ignore_settings_warning";
+
 
 
 
@@ -51,6 +56,25 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
         addPreferencesFromResource(R.xml.preferences);
         PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
         togglePreferences();
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        boolean ignoreWarning = getPreferenceManager().getSharedPreferences().getBoolean(SETTINGS_WARNING_IGNORE, false);
+        if(!ignoreWarning) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle("Important!");
+            builder.setMessage("Parameter changes only influence the Recording functionality!");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    //nothing to do here
+                }
+            });
+            builder.show();
+        }
     }
 
     private void togglePreferences() {

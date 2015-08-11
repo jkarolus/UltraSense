@@ -33,7 +33,7 @@ import jakobkarolus.de.ultrasense.features.gestures.SwipeGE;
  * <br><br>
  * Created by Jakob on 10.08.2015.
  */
-public class UltraSenseFactory {
+public class UltraSenseModule {
 
     public static final double SAMPLE_RATE = 44100.0;
     private static final int fftLength = 4096;
@@ -48,7 +48,7 @@ public class UltraSenseFactory {
     private Activity activity;
     private boolean initialized;
 
-    public UltraSenseFactory(Activity activity){
+    public UltraSenseModule(Activity activity){
         this.activity = activity;
         this.audioManager = new AudioManager(activity);
         this.initialized = false;
@@ -72,7 +72,7 @@ public class UltraSenseFactory {
 
         for (GestureExtractor ge : gestureExtractors) {
             if (!usePreCalibration)
-                initializeGEThresholds(ge);
+                initializeGEThresholds(ge, noisy);
             gestureFP.registerGestureExtractor(ge);
         }
         featureDetector.registerFeatureExtractor(new GaussianFE(gestureFP));
@@ -122,9 +122,9 @@ public class UltraSenseFactory {
             activityFP.stopFeatureProcessing();
     }
 
-    private boolean initializeGEThresholds(GestureExtractor ge) {
+    private boolean initializeGEThresholds(GestureExtractor ge, boolean noisy) {
         try {
-            ObjectInputStream in = new ObjectInputStream(activity.openFileInput(ge.getName() + ".calib"));
+            ObjectInputStream in = new ObjectInputStream(activity.openFileInput(ge.getName() + (noisy ? "_noisy" : "") + ".calib"));
             Map<String, Double> thresholds = (HashMap<String, Double>) in.readObject();
             return ge.setThresholds(thresholds);
         } catch (FileNotFoundException e) {
@@ -139,5 +139,19 @@ public class UltraSenseFactory {
         return false;
     }
 
+    public ActivityFP getActivityFP() {
+        return activityFP;
+    }
+
+    public GestureFP getGestureFP() {
+        return gestureFP;
+    }
+
+    public String printFeatureDetectionParameters(){
+        if(featureDetector != null)
+            return featureDetector.printParameters();
+        else
+            return "";
+    }
 
 }

@@ -97,7 +97,7 @@ public class MeanBasedFD extends FeatureDetector{
         StringBuffer buffer = new StringBuffer();
         buffer.append("FD parameters:\n");
         buffer.append("thr: " + magnitudeThreshold + ", high: " + featHighThreshold + ", low: " + featLowThreshold + ", halfWidth: " + halfCarrierWidth);
-        buffer.append(", slack: " + featSlackWidth + ", max: " + maxFeatureThreshold);
+        buffer.append(", slack: " + featSlackWidth + ", ignoreNoise: " + ignoreNoise + " (max: " + maxFeatureThreshold + ")");
         return buffer.toString();
     }
 

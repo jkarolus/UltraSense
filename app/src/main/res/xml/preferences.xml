@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <CheckBoxPreference
+        android:key="pref_ignore_settings_warning"
+        android:title="@string/pref_ignore_settings_warning"
+        android:defaultValue="false"/>
+
+    <CheckBoxPreference
+        android:key="pref_key_use_precalibration"
+        android:title="@string/pref_key_use_precalibration"
+        android:defaultValue="true"/>
+
     <ListPreference
         android:key="pref_mode"
         android:title="@string/pref_mode"
@@ -18,11 +28,6 @@
             android:title="@string/pref_title_cw_freq"
             android:defaultValue="20000"
             android:inputType="numberDecimal" />
-
-        <CheckBoxPreference
-            android:key="pref_key_use_precalibration"
-            android:title="@string/pref_key_use_precalibration"
-            android:defaultValue="true"/>
 
 
         <ListPreference
