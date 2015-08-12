@@ -10,14 +10,14 @@ import java.util.Vector;
 import jakobkarolus.de.ultrasense.features.Feature;
 
 /**
- * abstracts over gesture that consist of two consecutive doppler motions (e.g. swipes).<br>
- * These gesture can be classified using their extend/length and weight of the respective doppler motion
+ * abstracts over gesture that consist of two consecutive doppler features (e.g. swipes).<br>
+ * These gesture can be classified using their extend/length and weight of the respective doppler feature
  * and the distance between these.
  *
  * <br><br>
  * Created by Jakob on 08.07.2015.
  */
-public abstract class TwoMotionGE implements GestureExtractor{
+public abstract class TwoFeatureGE implements GestureExtractor{
 
     private final static String TIME_DISTANCE_MIN = "TimeDistanceMin";
     private final static String TIME_DISTANCE_MAX = "TimeDistanceMax";

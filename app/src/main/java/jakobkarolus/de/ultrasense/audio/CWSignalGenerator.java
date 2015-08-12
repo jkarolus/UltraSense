@@ -4,7 +4,7 @@ import android.util.FloatMath;
 
 /**
  * Generate a continous wave signal of given frequency, amplitude and length (seconds)
- *
+ *<br><br>
  * Created by Jakob on 27.05.2015.
  */
 public class CWSignalGenerator implements SignalGenerator{
@@ -15,7 +15,7 @@ public class CWSignalGenerator implements SignalGenerator{
     private double sampleRate;
 
     /**
-     *
+     * creates a new CWSignalGenerator to be used in the AudioManager
      *
      * @param freq the frequency in Hz
      * @param length length of the signal in seconds

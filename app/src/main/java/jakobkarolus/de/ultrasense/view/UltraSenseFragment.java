@@ -9,7 +9,6 @@ import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -29,7 +28,6 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
@@ -47,14 +45,15 @@ import jakobkarolus.de.ultrasense.features.gestures.GestureCallback;
 import jakobkarolus.de.ultrasense.features.gestures.GestureExtractor;
 
 /**
+ * Main Fragment of the UltraSenseApp.<br>
+ * Provides Recording/Detection and Calibration function
+ *
+ * <br><br>
  * Created by Jakob on 25.05.2015.
  */
 public class UltraSenseFragment extends Fragment implements GestureCallback, InferredContextCallback {
 
-    private static final String DISPLAY_LAST_SPEC = "DISPLAY_LAST_SPEC";
-    private Bitmap lastSpectrogram;
     public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
-    public static final double SAMPLE_RATE = 44100.0;
 
     private StftManager stftManager;
 
@@ -62,8 +61,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     private Button gestureDetectionButton;
     private Button activityDetectionButton;
 
-    private Button computeStftButton;
-    private Button showLastSpec;
     private Button calibrateButton;
     private TextView countDownView;
     private View calibVisualFeedbackView;
@@ -87,8 +84,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         rootView = inflater.inflate(R.layout.fragment_pulse_radar, container, false);
         recordButton = (Button) rootView.findViewById(R.id.button_start_record);
         gestureDetectionButton = (Button) rootView.findViewById(R.id.button_start_detection);
-        computeStftButton = (Button) rootView.findViewById(R.id.button_fft);
-        showLastSpec = (Button) rootView.findViewById(R.id.button_last_spec);
         calibrateButton = (Button) rootView.findViewById(R.id.button_calibrate);
         countDownView = (TextView) rootView.findViewById(R.id.text_countdown);
         calibVisualFeedbackView = (View) rootView.findViewById(R.id.view_calib_recognized);
@@ -109,18 +104,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             @Override
             public void onClick(View v) {
                 startGestureDetection();
-            }
-        });
-        computeStftButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                computeStft();
-            }
-        });
-        showLastSpec.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showLastSpec();
             }
         });
         calibrateButton.setOnClickListener(new View.OnClickListener() {
@@ -465,7 +448,6 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                 }
             }
         });
-        computeStftButton.setEnabled(true);
         ultraSenseModule.stopRecord();
 
 
@@ -477,65 +459,20 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
 
     private void showLastSpec() {
-        if(lastSpectrogram != null) {
-            Bundle args = new Bundle();
-            args.putBoolean(DISPLAY_LAST_SPEC, true);
+
+        if(stftManager.getCurrentSTFT() != null) {
 
             FragmentTransaction ft = getFragmentManager().beginTransaction();
-            Fragment spec = new Spectrogram();
-            spec.setArguments(args);
-            ft.replace(R.id.container, spec, Spectrogram.class.getName());
+            Fragment frag = Spectrogram.newInstance(stftManager);
+            ft.replace(R.id.container, frag, Spectrogram.class.getName());
             ft.addToBackStack(Spectrogram.class.getName());
             ft.commit();
         }
-        else
-            Toast.makeText(getActivity(), "No latest spectrogram available", Toast.LENGTH_LONG).show();
-    }
-
-
-    private void computeStft() {
-        if(ultraSenseModule.getAudioManager().hasRecordData()) {
-            new ComputeSTFTTask().execute();
-        }
         else{
-            Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(), "No latest spectrogram available. Call ComputeSTFT first!", Toast.LENGTH_LONG).show();
         }
-    }
-
-
-
-
-    @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_settings).setVisible(true);
-        menu.findItem(R.id.action_compute_stft).setVisible(true);
-        menu.findItem(R.id.action_show_last).setVisible(true);
-        menu.findItem(R.id.action_update_debug_info).setVisible(true);
 
     }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-
-        if (id == R.id.action_compute_stft) {
-            computeStft();
-            return true;
-        }
-
-        if (id == R.id.action_show_last){
-            showLastSpec();
-            return true;
-        }
-
-        if(id == R.id.action_update_debug_info) {
-            updateDebugInfo();
-            return true;
-        }
-        return false;
-    }
-
 
 
     private void updateDebugInfo() {
@@ -553,7 +490,14 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     }
 
 
-
+    private void computeStft() {
+        if(ultraSenseModule.getAudioManager().hasRecordData()) {
+            new ComputeSTFTTask().execute();
+        }
+        else{
+            Toast.makeText(getActivity(), "No latest record available", Toast.LENGTH_LONG).show();
+        }
+    }
 
     private class ComputeSTFTTask extends AsyncTask<Void, String, Void> {
 
@@ -574,13 +518,10 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             pd.dismiss();
 
             if(stftManager.getCurrentSTFT() != null) {
-                Bundle args = new Bundle();
-                args.putBoolean(DISPLAY_LAST_SPEC, false);
 
                 FragmentTransaction ft = getFragmentManager().beginTransaction();
-                Fragment spec = new Spectrogram();
-                spec.setArguments(args);
-                ft.replace(R.id.container, spec, Spectrogram.class.getName());
+                Fragment frag = Spectrogram.newInstance(stftManager);
+                ft.replace(R.id.container, frag, Spectrogram.class.getName());
                 ft.addToBackStack(Spectrogram.class.getName());
                 ft.commit();
             }
@@ -596,7 +537,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
             if(data.length != 0) {
                 stftManager.setData(data);
                 publishProgress("Applying high pass filter");
-                stftManager.applyHighPassFilterOld();
+                stftManager.applyHighPassFilter();
                 publishProgress("Modulating signal");
                 stftManager.modulate(19000);
                 publishProgress("Downsampling");
@@ -608,37 +549,33 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         }
     }
 
-    private void saveDataToFile(String fileName, double[] data) {
-        try {
-            FileWriter writer = new FileWriter(new File(fileDir + fileName  + ".txt"), false);
-            for(int i=0; i < data.length; i++){
-                writer.write(data[i] + " ");
-            }
-            writer.flush();
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_settings).setVisible(true);
+        menu.findItem(R.id.action_compute_stft).setVisible(true);
+        menu.findItem(R.id.action_show_last).setVisible(true);
+
     }
 
-    private void saveStftToFile(String fileName, double[][] stft) {
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
 
-        try {
-            FileWriter writer = new FileWriter(new File(fileDir + fileName  + ".txt"), false);
-            for(int i=0; i < stft.length; i++){
-                for(int j=0; j < stft[i].length; j++){
-                    if(j == stft[i].length-1)
-                        writer.write(stft[i][j] + ";\n");
-                    else
-                        writer.write(stft[i][j] + ",");
-                }
-            }
-            writer.flush();
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        int id = item.getItemId();
+
+        if (id == R.id.action_compute_stft) {
+            computeStft();
+            return true;
         }
+
+        if (id == R.id.action_show_last){
+            showLastSpec();
+            return true;
+        }
+
+        return false;
     }
+
 
 
     @SuppressLint("ValidFragment")
@@ -676,97 +613,4 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         }
     }
 
-    @SuppressLint("ValidFragment")
-    public class Spectrogram extends Fragment {
-
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            setHasOptionsMenu(true);
-
-        }
-
-        @Override
-        public void onPrepareOptionsMenu(Menu menu) {
-            menu.findItem(R.id.action_settings).setVisible(false);
-            menu.findItem(R.id.action_compute_stft).setVisible(false);
-            menu.findItem(R.id.action_show_last).setVisible(false);
-            menu.findItem(R.id.action_update_debug_info).setVisible(false);
-
-        }
-
-        public Spectrogram(){
-
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
-            View rootView = inflater.inflate(R.layout.fragment_spectrogram, container, false);
-            TouchImageView spec = (TouchImageView) rootView.findViewById(R.id.spectrogram);
-
-            if(!getArguments().getBoolean(DISPLAY_LAST_SPEC))
-                lastSpectrogram = createBitmap(convertToGreyscale(stftManager.getCurrentSTFT()));
-            spec.setImageBitmap(lastSpectrogram);
-
-            return rootView;
-        }
-
-
-        private Bitmap createBitmap(int[][] data){
-            int height = data[0].length;
-            int width = data.length;
-            //Toast.makeText(PulseRadar.this, "#frequencies: " + height + ", #timesteps: " + width, Toast.LENGTH_LONG).show();
-
-            int widthFactor = 16;
-            int[] arrayCol = new int[width*height*widthFactor/2];
-            int counter = 0;
-            for(int i = height/2-1; i >= 0; i--) {
-                for(int j = 0; j < width; j++) {
-
-                    for(int k=0; k < widthFactor; k++)
-                        arrayCol[counter+k] = data[j][i];
-
-                    counter+=widthFactor;
-                }
-            }
-            return Bitmap.createBitmap(arrayCol, width * widthFactor, height / 2, Bitmap.Config.ARGB_8888);
-        }
-    }
-
-    private int[][] convertToGreyscale(double[][] stft) {
-        double[] maxMin = findMaxMin(stft);
-        double maxValue = maxMin[0];
-        double minValue = maxMin[1];
-        int[][] spec = new int[stft.length][stft[0].length];
-        for (int i = 0; i < stft.length; i++) {
-            for (int j = 0; j < stft[i].length; j++) {
-                int value = Math.max(0, Math.min(255, (int) (((stft[i][j] - minValue) / (maxValue - minValue)) * 255.0)));
-                value = 255-value;
-                spec[i][j] = Color.rgb(value, value, value);
-            }
-        }
-        return spec;
-    }
-
-    /**
-     *
-     * @param stft current STFT
-     * @return two entry double array; [0] is max, [1] is min
-     */
-    private double[] findMaxMin(double[][] stft) {
-        double currentMax = Double.MIN_VALUE;
-        double currentMin = Double.MAX_VALUE;
-
-        for(int i=0; i < stft.length; i++){
-            for(int j=0; j < stft[i].length; j++){
-                if(stft[i][j] > currentMax)
-                    currentMax = stft[i][j];
-                if(stft[i][j] < currentMin)
-                    currentMin = stft[i][j];
-            }
-        }
-        double[] maxMin = {currentMax, currentMin};
-        return maxMin;
-    }
 }

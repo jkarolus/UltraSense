@@ -6,7 +6,7 @@ import java.util.Map;
 import jakobkarolus.de.ultrasense.features.Feature;
 
 /**
- * Interface for each GestureExtrator. Given a list of Feature each subclass should decide whether to
+ * Interface for each GestureExtractor. Given a list of Features each subclass should decide whether to
  * extract a gesture or not and modify the list accordingly.
  *
  * <br><br>
@@ -17,7 +17,7 @@ public interface GestureExtractor {
     /**
      * Detects Gestures based on the current features.
      * Each subclass should modify the list of features upon detecting a gesture.<br>
-     * Gets called by the GestureFP everytime a new feature arrives
+     * Gets called by the GestureFP every time a new feature arrives
      *
      * @param features the current List of detected features
      * @return a list of gestures that match the features
@@ -64,7 +64,7 @@ public interface GestureExtractor {
     /**
      * called during calibration to reset the previous thresholds
      */
-    public void resetThresholds();
+    void resetThresholds();
 
     /**
      *
@@ -77,11 +77,11 @@ public interface GestureExtractor {
      * @param features the feature list
      * @return true if feature is possible; otherwise false (e.g. low doppler and down feature)
      */
-    public abstract boolean doSanityCalibrationCheck(List<Feature> features);
+    public boolean doSanityCalibrationCheck(List<Feature> features);
 
     /**
      * gets called upon finishing the calibration.<br>
      * GestureExtractor may combine the collected thresholds during calibration into the final ones
      */
-    public abstract void finishCalibration();
+    public void finishCalibration();
 }

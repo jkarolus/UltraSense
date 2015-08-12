@@ -29,6 +29,22 @@ public class MeanBasedFD extends FeatureDetector{
     private boolean carryAvailable;
 
 
+    /**
+     * creates a new MeanBasedFD with the given feature detection parameters
+     *
+     * @param sampleRate sampleRate of the signal
+     * @param fftLength fft length to use
+     * @param hopSize hop size during fft processing
+     * @param carrierFrequency carrier frequency
+     * @param halfCarrierWidth single side magnitude extend (over lower and higher freq bins respectively) of the carrier frequency
+     * @param magnitudeThreshold magnitude threshold to use
+     * @param featHighThreshold threshold to overcome for starting a feature
+     * @param featLowThreshold threshold to overcome for continuing an already started feature
+     * @param featSlackWidth number of times the low thresholds is allowed to be bigger than the feature value to still continue the feature
+     * @param win fft window to use
+     * @param ignoreNoise whether to ignoreNoise
+     * @param maxFeatureThreshold the maximum allowed feature value, only valid in conjunction with ignoreNoise==true
+     */
     public MeanBasedFD(double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win, boolean ignoreNoise, double maxFeatureThreshold) {
         super((double) hopSize / sampleRate);
         this.fftLength = fftLength;
@@ -45,15 +61,12 @@ public class MeanBasedFD extends FeatureDetector{
         this.windowAmp = AlgoHelper.sumWindowNorm(win);
         this.ignoreNoise = ignoreNoise;
         this.maxFeatureThreshold = maxFeatureThreshold;
-
-        //instantiate new FD every time recording starts to reset carry
         this.carryAvailable = false;
     }
 
     @Override
     public void checkForFeatures(double[] audioBuffer, boolean applyHighPass) {
 
-        //AlgoHelper.scaleToOne(audioBuffer);
         if(applyHighPass)
             AlgoHelper.applyHighPassFilter(audioBuffer);
 
@@ -87,8 +100,6 @@ public class MeanBasedFD extends FeatureDetector{
             processFeatureValue(getCurrentLowFeature(), valueForTimeStep[1], false);
 
         }
-
-
 
     }
 

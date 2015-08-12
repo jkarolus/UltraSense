@@ -1,6 +1,7 @@
 package jakobkarolus.de.ultrasense.features;
 
 /**
+ * FeatureDetector that does detect any features; Is used during FMCW mode
  * <br><br>
  * Created by Jakob on 24.07.2015.
  */

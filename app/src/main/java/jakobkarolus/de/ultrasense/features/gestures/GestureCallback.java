@@ -11,7 +11,7 @@ public interface GestureCallback {
 
     /**
      * callback during a multiple-step calibration
-     * @param calibState the state of the calibration (e.g. ongoing when calibrated "double" Doppler gestures (swipe))
+     * @param calibState the state of the calibration (e.g. ongoing when calibrating two-feature gestures (swipe))
      */
     public void onCalibrationStep(final CalibrationState calibState);
 

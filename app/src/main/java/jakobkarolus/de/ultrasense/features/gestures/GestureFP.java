@@ -11,7 +11,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
 import jakobkarolus.de.ultrasense.features.FeatureProcessor;
 
 /**
- * Combines Features and their respective Gesture, by keeping a List of current Feature and delegating
+ * Combines Features and their respective Gesture, by keeping a List of current Features and delegating
  * Gesture recognition to its GestureExtractors
  *
  * <br><br>
@@ -29,6 +29,11 @@ public class GestureFP extends FeatureProcessor {
     private boolean noisy;
     private GestureExtractor calibrator;
 
+    /**
+     * creates a new GestureFP
+     *
+     * @param gestureCallback the GestureCallback to use
+     */
     public GestureFP(GestureCallback gestureCallback){
         this.gestureCallback = gestureCallback;
         gestureExtractors = new Vector<>();
@@ -49,14 +54,18 @@ public class GestureFP extends FeatureProcessor {
         this.gestureExtractors.clear();
     }
 
+    /**
+     *
+     * @return a list of all GestureExtractors currently associated with this GestureFP
+     */
     public List<GestureExtractor> getGestureExtractors(){
         return this.gestureExtractors;
     }
 
-    public GestureExtractor getCalibrator(){
-        return this.calibrator;
-    }
-
+    /**
+     *
+     * @return String array of the names of all GEs currently registered with this GestureFP
+     */
     public String[] getGestureExtractorNames(){
         String[] names = new String[gestureExtractors.size()];
         for(int i=0; i < gestureExtractors.size(); i++)
@@ -64,6 +73,11 @@ public class GestureFP extends FeatureProcessor {
         return names;
     }
 
+    /**
+     * start calibrating process
+     * @param ge the GestureExtractor to calibrate
+     * @param noisy whether to consider a noisy environment
+     */
     public void startCalibrating(GestureExtractor ge, boolean noisy){
         this.calibrator = ge;
         this.calibrator.resetThresholds();
@@ -75,7 +89,7 @@ public class GestureFP extends FeatureProcessor {
 
     @Override
     public void stopFeatureProcessing() {
-        //GestureFP does not implicit periodic feature processing -> nothing to do here
+        //GestureFP does not include periodic feature processing -> nothing to do here
     }
 
     @Override

@@ -9,7 +9,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
  * <br><br>
  * Created by Jakob on 08.07.2015.
  */
-public class UpGE extends OneMotionGE{
+public class UpGE extends OneFeatureGE {
 
     private static final double LENGTH_MIN = 0.1;
     private static final double LENGTH_MAX = 0.21;

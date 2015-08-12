@@ -18,6 +18,10 @@ public abstract class ActivityExtractor {
     private InferredContext currentContext;
 
 
+    /**
+     * creats a new ActivityExtractor
+     * @param callback the InferredContextCallback to use when detecting an activity
+     */
     public ActivityExtractor(InferredContextCallback callback) {
         this.callback = callback;
         this.currentContext = InferredContext.UNKNOWN;
@@ -28,7 +32,7 @@ public abstract class ActivityExtractor {
     }
 
     /**
-     * Gets called by an ActivityFP everytime a new feature is detected.<br>
+     * Gets called by an ActivityFP every time a new feature is detected.<br>
      *
      * @param feature the newest feature that was detected
      * @param featureList the current feature list (DOES NOT include the new feature)
@@ -39,7 +43,7 @@ public abstract class ActivityExtractor {
     /**
      * Detects activities based on the current features.<br>
      * Contrary to the GestureFP, this method is called in regular time intervals to enable time sensitive context.<br>
-     * ActivityExtractor should modify the list upon detecting an activity!
+     * ActivityExtractors should modify the list upon detecting an activity!
      *
      * @param features the current feature list
      */

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Vector;
 
 /**
- * Each FeatureDetector processing the current audio stream and notifies its listener when it detects a Feature.<br>
+ * Each FeatureDetector processes the current audio stream and notifies its listener when it detects a Feature.<br>
  * Detection is separated for high and low doppler shifts as is their notification.
  *
  * <br><br>
@@ -28,6 +28,10 @@ public abstract class FeatureDetector {
     private UnrefinedFeature currentLowFeature;
 
 
+    /**
+     * creates a new FeatureDetector
+     * @param timeIncreasePerStep the amount of real time that passes during one time-step (depends on the fft parameters)
+     */
     public FeatureDetector(double timeIncreasePerStep){
         this.featExtractors = new Vector<>();
         this.timeIncreasePerStep = timeIncreasePerStep;
@@ -38,14 +42,16 @@ public abstract class FeatureDetector {
 
     /**
      * process the audioBuffer and detect features. Call notify... upon detection.<br>
-     * The buffer is not guaranteed to be of the same length every time!
      *
-     * @param audioBuffer
+     * @param audioBuffer audio data as double[]
      * @param applyHighPass suggestion, whether to use a high pass filter on this data (e.g. preprocessed data for testing that has already been filtered)
      */
     public abstract void checkForFeatures(double[] audioBuffer, boolean applyHighPass);
 
 
+    /**
+     * notifies all Feature Extractors that a positive doppler has been detected
+     */
     public void notifyFeatureDetectedHigh(){
         for(FeatureExtractor fe : this.featExtractors)
             fe.onHighFeatureDetected(new UnrefinedFeature(currentHighFeature));
@@ -53,6 +59,9 @@ public abstract class FeatureDetector {
         this.currentHighFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }
 
+    /**
+     * notifies all Feature Extractors that a negative doppler has been detected
+     */
     public void notifyFeatureDetectedLow(){
         for(FeatureExtractor fe : this.featExtractors)
             fe.onLowFeatureDetected(new UnrefinedFeature(currentLowFeature));
@@ -72,11 +81,11 @@ public abstract class FeatureDetector {
         this.featExtractors.clear();
     }
 
-    public UnrefinedFeature getCurrentHighFeature() {
+    protected UnrefinedFeature getCurrentHighFeature() {
         return currentHighFeature;
     }
 
-    public UnrefinedFeature getCurrentLowFeature() {
+    protected UnrefinedFeature getCurrentLowFeature() {
         return currentLowFeature;
     }
 

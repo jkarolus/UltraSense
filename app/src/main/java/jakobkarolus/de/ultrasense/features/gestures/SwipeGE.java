@@ -9,7 +9,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
  * <br><br>
  * Created by Jakob on 29.07.2015.
  */
-public class SwipeGE extends TwoMotionGE{
+public class SwipeGE extends TwoFeatureGE {
 
     /*
     private static final double F1_LENGTH_MIN = 0.023;

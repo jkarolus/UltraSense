@@ -26,6 +26,9 @@ public class ActivityFP extends FeatureProcessor {
     private Timer timer;
     private long lastTimeFeatureSeen;
 
+    /**
+     * creates a new ActivityFP and starts periodic updates towards its ActivityExtractors
+     */
     public ActivityFP() {
         this.activityExtractors = new Vector<>();
         this.timer = new Timer();

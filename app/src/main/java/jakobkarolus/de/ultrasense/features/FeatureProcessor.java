@@ -26,6 +26,10 @@ public abstract class FeatureProcessor {
     private FileWriter featWriter;
 
 
+    /**
+     *
+     * @return the current feature time, in other words the time at with the last feature arrived
+     */
     public double getCurrentFeatureTime() {
         return currentFeatureTime;
     }
@@ -34,10 +38,17 @@ public abstract class FeatureProcessor {
         this.currentFeatureTime = currentFeatureTime;
     }
 
+    /**
+     *
+     * @return current list of feature
+     */
     public List<Feature> getFeatures() {
         return features;
     }
 
+    /**
+     * creates a new FeatureProcessor at time 0.0
+     */
     public FeatureProcessor() {
         this.features = new Vector<>();
         currentFeatureTime = 0.0;
@@ -76,6 +87,11 @@ public abstract class FeatureProcessor {
      */
     public abstract double getTimeThresholdForGC();
 
+    /**
+     * saves the given feature to a file.<br>
+     * If used you must have called startFeatureWriter() before and closeFeatureWriter() when recording/detection is finished
+     * @param feature the feature to save
+     */
     public void saveFeatureToFile(final Feature feature){
         if(featWriter != null) {
             //save feature
@@ -84,6 +100,7 @@ public abstract class FeatureProcessor {
                 public void run() {
                     try {
                         featWriter.write(feature.getTime() + "," + feature.getLength() + "," + feature.getWeight() + "\n");
+                        featWriter.flush();
                     } catch (IOException e) {
                         //feature detection was already closed when this feature came in
                     }
@@ -107,12 +124,14 @@ public abstract class FeatureProcessor {
     public void startFeatureWriter(){
         try {
             featWriter = new FileWriter(new File(UltraSenseFragment.fileDir + "feat.txt"), false);
-            //calibWriter = new FileWriter(new File(UltraSenseFragment.fileDir + "calib.txt"), false);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * cleans up the feature stack depending on the GC_threshold
+     */
     protected void cleanUpFeatureStack() {
 
         if(getFeatures().size() >= 5){
@@ -128,6 +147,10 @@ public abstract class FeatureProcessor {
         }
     }
 
+    /**
+     *
+     * @return String representation of the current feature stack (list of high and low features)
+     */
     protected String printFeatureStack() {
         StringBuffer buffer = new StringBuffer();
         for(Feature f : getFeatures()){
@@ -139,6 +162,9 @@ public abstract class FeatureProcessor {
         return buffer.toString();
     }
 
+    /**
+     * prints detailed information of the feature stack to the logcat
+     */
     protected void printFeaturesOnLog() {
         Log.i("FEATURE_STACK", "------------------------------------------");
         for(Feature feature : getFeatures())

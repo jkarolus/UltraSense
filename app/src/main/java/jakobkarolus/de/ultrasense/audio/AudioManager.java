@@ -5,8 +5,6 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
-import android.media.MediaScannerConnection;
-import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -23,12 +21,15 @@ import java.nio.ByteOrder;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;
 
 /**
+ * interacts with the android audio system during recording and detection.
+ *
+ * <br><br>
  * Created by Jakob on 25.05.2015.
  */
 public class AudioManager{
 
     private Context ctx;
-    private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
+    private static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "UltraSense" + File.separator;
 
     private static final int SAMPLE_RATE = 44100;
     private DataOutputStream dosSend;
@@ -72,7 +73,6 @@ public class AudioManager{
 
                 final byte[] buffer = new byte[minSize];
                 while(detectionRunning){
-                    //TODO: it seems that read() always return minSize bytes
                     int samplesRead = ar.read(buffer, 0, minSize);
                     if(samplesRead != minSize) {
                         Log.e("AUDIO_MANAGER", "Samples read not equal minSize (" + samplesRead + "). Might be loosing data!");
@@ -123,8 +123,7 @@ public class AudioManager{
     }
 
     /**
-     * called when pressing the "Start recording" button.<br>
-     * Starts the record and play threads
+     * starts recording the received audio. Also saves it to a file for later analysis
      *
      * @throws FileNotFoundException
      */
@@ -156,7 +155,6 @@ public class AudioManager{
 
                 final byte[] buffer = new byte[minSize];
                 while(recordRunning){
-                    //TODO: it seems that read() always return minSize bytes
                     int samplesRead = ar.read(buffer, 0, minSize);
                     if(samplesRead != minSize) {
                         Log.e("AUDIO_MANAGER", "Samples read not equal minSize (" + samplesRead + "). Might be loosing data!");
@@ -211,11 +209,19 @@ public class AudioManager{
 
     }
 
+    /**
+     * Finishes play and record thread and ask for filename.<br>
+     * Saved files can be found in the app directory (in /Downloads)
+     *
+     * @throws IOException
+     */
+    public void stopRecord() throws IOException {
+        recordRunning = false;
+    }
 
     private double[] convertToDouble(byte[] buffer, int bytesRead) {
 
         //from http://stackoverflow.com/questions/5774104/android-audio-fft-to-retrieve-specific-frequency-magnitude-using-audiorecord
-
         double[] bufferDouble = new double[buffer.length/2];
         final int bytesPerSample = 2; // As it is 16bit PCM
         final double amplification = 1.0; // choose a number as you like
@@ -236,8 +242,6 @@ public class AudioManager{
     }
 
 
-
-
     private void writeByteBufferToStream(byte[] buffer, DataOutputStream dos){
 
         try{
@@ -256,28 +260,7 @@ public class AudioManager{
         }
     }
 
-    private void writeShortBufferToStream(short[] buffer, DataOutputStream dos) {
-        try {
-            ByteBuffer bytes = ByteBuffer.allocate(buffer.length * 2);
-            for (short s : buffer) {
-                bytes.putShort(s);
-            }
-            dos.write(bytes.array());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    /**
-     * called when pressing the "Stop recording" button.<br>
-     * Finishes play and record thread and ask for filename.<br>
-     * Saved files can be found in the app-own directory (Android/data/...)
-     *
-     * @throws IOException
-     */
-    public void stopRecord() throws IOException {
-        recordRunning = false;
-    }
 
     /**
      * saves the current recorded audio (if any) under the given filename.<br>
@@ -335,15 +318,6 @@ public class AudioManager{
                 bytes.putShort(s);
             }
             output.write(bytes.array());
-
-            MediaScannerConnection.scanFile(ctx,
-                    new String[]{file.toString()}, null,
-                    new MediaScannerConnection.OnScanCompletedListener() {
-                        public void onScanCompleted(String path, Uri uri) {
-                            Log.i("ExternalStorage", "Scanned " + path + ":");
-                            Log.i("ExternalStorage", "-> uri=" + uri);
-                        }
-                    });
         }
 
         finally {
@@ -352,8 +326,10 @@ public class AudioManager{
             }
         }
     }
+
+
     /**
-     * converts recording byte stream into double array
+     * converts the recorded byte stream into double array
      *
      * @param refine whether to refine the recorded data (trim first and last second)
      * @return double array of the latest recorded data
@@ -444,24 +420,6 @@ public class AudioManager{
         }
     }
 
-    private double[] generateTestData() {
-        double sampleRate = 44100.0;
-        double amplitude = 1.0;
-        double frequency = 5000.0;
-
-        double seconds = 1.0;
-        double[] buffer = new double[(int) (5*seconds * sampleRate)];
-
-
-        for(int i=0; i < 5; i++)
-        {
-            for (int sample = (int)(i*seconds*sampleRate); sample < (int)((i+1)*seconds*sampleRate); sample++) {
-                double time = sample / sampleRate;
-                buffer[sample] = (amplitude * Math.sin(i*frequency*2.0*Math.PI * time));
-            }
-        }
-        return buffer;
-    }
 
     public boolean hasRecordData() {
         return tempFileRec != null && tempFileRec.length() > 0;

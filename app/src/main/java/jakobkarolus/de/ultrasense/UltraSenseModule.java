@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.StreamCorruptedException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,12 +55,24 @@ public class UltraSenseModule {
     private Activity activity;
     private boolean initialized;
 
+
+    /**
+     * creates a new UltraSenseModule, initializing the AudioManager
+     * @param activity the Activity to associate this module with
+     */
     public UltraSenseModule(Activity activity){
         this.activity = activity;
         this.audioManager = new AudioManager(activity);
         this.initialized = false;
     }
 
+    /**
+     * creates a custom UltraSense scenario given the settings provided by the user.<br>
+     * Use when experimenting with CW/FMCW in conjunction with the Recording function
+     *
+     * @param settingsParameters the settings defined by the user (settings tab)
+     * @throws IllegalArgumentException
+     */
     public void createCustomScenario(SharedPreferences settingsParameters) throws IllegalArgumentException{
         SignalGenerator signalGen;
         String mode = settingsParameters.getString(SettingsFragment.PREF_MODE, "CW");
@@ -113,6 +124,15 @@ public class UltraSenseModule {
         this.initialized = true;
     }
 
+    /**
+     * creates an UltraSense GestureDetection scenario.<br>
+     * Parameters for feature detection will be set accordingly. However the user can choose the environment noise and
+     * whether to use his calibration values for feature extraction (from a previous calibration) or precalibrated parameters
+     *
+     * @param callback the GestureCallback to call when detecting a gesture
+     * @param noisy whether the environment is noisy (in other words: whether detection should compensate for that)
+     * @param usePreCalibration whether to use precalibrated parameters for feature extraction specified by the developer
+     */
     public void createGestureDetector(GestureCallback callback, boolean noisy, boolean usePreCalibration){
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
@@ -138,6 +158,12 @@ public class UltraSenseModule {
         this.initialized = true;
     }
 
+    /**
+     * creates an UltraSense WorkdeskPresence ActivityDetector.<br>
+     * Cycles through different context state, while the user works at his desk, e.g. recognizes if the user leaves/ is absent
+     *
+     * @param callback the InferredContextCallback to inform about context changes
+     */
     public void createWorkdeskPresenceDetector(InferredContextCallback callback){
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
@@ -151,6 +177,13 @@ public class UltraSenseModule {
 
     }
 
+    /**
+     * creates an UltraSense BedFall ActivityDetector.<br>
+     * Cycles through different context state, while the use is sleeping in a bed. E.g. being awake/sleeping or moving away from the bed.<br>
+     * Can detect an emergency like fall when moving away from the bed.
+     *
+     * @param callback the InferredContextCallback to inform about context changes
+     */
     public void createBedFallDetector(InferredContextCallback callback){
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
@@ -164,6 +197,12 @@ public class UltraSenseModule {
 
     }
 
+    /**
+     * starts a previously created scenario.<br>
+     * DOES NOT record to a file! Use startRecord() for this.
+     *
+     * @throws IllegalStateException if no scenario was created
+     */
     public void startDetection() throws IllegalStateException{
         if(!initialized || audioManager == null)
             throw new IllegalStateException("You must call a create method before starting any detection!");
@@ -171,6 +210,12 @@ public class UltraSenseModule {
         audioManager.startDetection();
     }
 
+    /**
+     * stops a previously started scenario. Subsequent calls will do nothing.<br>
+     * Use in conjunction with startDetection()
+     *
+     * @throws IllegalStateException if no scenario was created
+     */
     public void stopDetection() throws IllegalStateException{
         if(!initialized || audioManager == null)
             throw new IllegalStateException("You must call a create method before stoping any detection!");
@@ -185,30 +230,43 @@ public class UltraSenseModule {
             ObjectInputStream in = new ObjectInputStream(activity.openFileInput(ge.getName() + (noisy ? "_noisy" : "") + ".calib"));
             Map<String, Double> thresholds = (HashMap<String, Double>) in.readObject();
             return ge.setThresholds(thresholds);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (StreamCorruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return false;
     }
 
+    /**
+     * grants access to the ActivityFP if the scenario created it
+     * @return the current ActivityFP if created
+     */
     public ActivityFP getActivityFP() {
         return activityFP;
     }
 
+    /**
+     * grants access to the GestureFP if the scenario created it
+     * @return the current GestureFP if created
+     */
     public GestureFP getGestureFP() {
         return gestureFP;
     }
+
+    /**
+     * grants access to the AudioManager<br>
+     * E.g. to access record data before saving it to a file
+     *
+     * @return the AudioManager associated with the current scenario
+     */
     public AudioManager getAudioManager() {
         return audioManager;
     }
 
 
+    /**
+     *
+     * @return a String represenation of the feature detection parameters
+     */
     public String printFeatureDetectionParameters(){
         if(featureDetector != null)
             return featureDetector.printParameters();
@@ -216,6 +274,12 @@ public class UltraSenseModule {
             return "";
     }
 
+    /**
+     * starts a previously created scenario.<br>
+     * DOES record to a file! Can be used for later analysis.
+     *
+     * @throws IllegalStateException if no scenario was created
+     */
     public void startRecord() {
         if(!initialized || audioManager == null)
             throw new IllegalStateException("You must call a create method before starting any detection!");
@@ -227,6 +291,12 @@ public class UltraSenseModule {
         }
     }
 
+    /**
+     * stops a previously started scenario. Subsequent calls will do nothing.<br>
+     * Use in conjunction with startDetection()
+     *
+     * @throws IllegalStateException if no scenario was created
+     */
     public void stopRecord() {
         if(!initialized || audioManager == null)
             throw new IllegalStateException("You must call a create method before stoping any detection!");
@@ -240,9 +310,18 @@ public class UltraSenseModule {
             activityFP.stopFeatureProcessing();
     }
 
+     /**
+     * Saves previously recorded files (sent and received data)
+     * @param fileName
+     * @throws IOException
+     */
     public void saveRecordedFiles(String fileName) throws IOException {
         if(!initialized || audioManager == null)
             throw new IllegalStateException("You must call a create method before calling start/stop or save!");
+
+        if(!audioManager.hasRecordData())
+            throw new IllegalStateException("You must record something before saving it");
+
         audioManager.saveWaveFiles(fileName);
     }
 }

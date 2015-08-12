@@ -11,7 +11,4 @@
     <item android:id="@+id/action_show_last" android:title="Show Spectrogram"
         android:orderInCategory="100" app:showAsAction="never" />
 
-    <item android:id="@+id/action_update_debug_info" android:title="Update DebugInfo"
-        android:orderInCategory="100" app:showAsAction="ifRoom"
-        android:icon="@mipmap/action_update_debug"/>
 </menu>

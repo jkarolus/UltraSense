@@ -33,6 +33,11 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
     private int noFeaturePresentCounter;
 
 
+    /**
+     * creates a new WorddeskPresence AE. Initial state is PRESENT
+     *
+     * @param callback the InferredContextCallback
+     */
     public WorkdeskPresenceAE(InferredContextCallback callback) {
         super(callback);
         changeContext(InferredContext.PRESENT, "Initial state");

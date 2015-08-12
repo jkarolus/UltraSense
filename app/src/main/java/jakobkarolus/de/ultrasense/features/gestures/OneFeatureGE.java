@@ -16,7 +16,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
  * <br><br>
  * Created by Jakob on 28.07.2015.
  */
-public abstract class OneMotionGE implements GestureExtractor{
+public abstract class OneFeatureGE implements GestureExtractor{
 
     private final static String LENGTH_MIN = "LengthMin";
     private final static String LENGTH_MAX = "LengthMax";

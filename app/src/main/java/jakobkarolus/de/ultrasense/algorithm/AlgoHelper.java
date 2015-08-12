@@ -1,25 +1,30 @@
 package jakobkarolus.de.ultrasense.algorithm;
 
-import android.util.FloatMath;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 
-import java.util.Arrays;
-
 /**
+ * Utility class providing signal processing functionality.
+ *
+ * <br><br>
  * Created by Jakob on 14.05.2015.
  */
 public class AlgoHelper {
 
-    //buttworth filter
+    //butterworth filter
     private static double[] b = {0.010312874762664, -0.061877248575986,  0.154693121439966, -0.206257495253288, 0.154693121439966, -0.061877248575986,  0.010312874762664};
     private static double[] a = {1.000000000000000,  1.187600680175615,  1.305213349288551,  0.674327525297999, .263469348280139,  0.051753033879642,  0.005022526595088};
 
 
-    public static void scaleToOne(double[] data) {
+    /**
+     * scales all data between -1 and 1
+     *
+     * @param data the data to scale
+     * @return scaled data
+     */
+    public static double[] scaleToOne(double[] data) {
         double max = Double.MIN_VALUE;
         for(double d : data) {
             if (d > max)
@@ -27,10 +32,48 @@ public class AlgoHelper {
         }
         for(int i=0; i < data.length; i++)
             data[i] /= max;
+
+        return data;
+    }
+
+    /**
+     * modulate the given data
+     *
+     * @param frequency the carrier frequency to use
+     * @param sampleRate of the data
+     * @param data the data
+     * @return modulated signal
+     */
+    public static double[] modulate(double frequency, double sampleRate, double[] data){
+        double[] carrierSignal = AlgoHelper.generateSignal(frequency, data.length, 1.0, sampleRate);
+        for(int i=0; i < data.length; i++)
+            data[i] *= carrierSignal[i];
+        return data;
+    }
+
+    /**
+     * downsamples the data by the given factor
+     *
+     * @param factor downsample factor
+     * @param data the data
+     */
+    public static double[] downsample(int factor, double[] data){
+        double[] downsampledData = new double[(int) Math.ceil(data.length/factor)];
+        int counter=0;
+        for(int i=0; i < data.length; i+=factor) {
+            downsampledData[counter] = data[i];
+            counter++;
+        }
+        return downsampledData;
     }
 
 
-    public static void applyHighPassFilter(double[] data){
+    /**
+     * applies a 6th-order butterworth highpass filter with cutoff at 0.6
+     * @param data
+     * @return highpass filtered data
+     */
+    public static double[] applyHighPassFilter(double[] data){
 
         //http://dsp.stackexchange.com/questions/592/how-does-matlab-handle-iir-filters
 
@@ -65,10 +108,18 @@ public class AlgoHelper {
 
             p++;
         }
+        return data;
 
     }
 
 
+    /**
+     * applies fft processing to the given data
+     * @param x the data (size must be power of 2)
+     * @param win the window to use
+     * @param windowAmp and its amplification to consider
+     * @return the magnitude per frequency bin
+     */
     public static double[] fftMagnitude(double[] x, double[] win, double windowAmp){
         for(int i=0; i < x.length; i++)
             x[i] = x[i] * win[i];
@@ -99,6 +150,11 @@ public class AlgoHelper {
 
     }
 
+    /**
+     * norm for the given window (sum(win)/length(win))
+     * @param win the window
+     * @return the norm
+     */
     public static double sumWindowNorm(double[] win) {
         double sum=0.0;
         for(int i=0; i < win.length; i++)
@@ -107,9 +163,9 @@ public class AlgoHelper {
     }
 
     /**
+     * conmputes hann window for given size
      *
-     *
-     * @param n the lenght of the window
+     * @param n the length of the window
      * @return a Hann window as double[]
      */
     public static double[] getHannWindow(int n){
@@ -122,6 +178,15 @@ public class AlgoHelper {
 
     }
 
+
+    /**
+     * generate a CW signal with the given properties
+     * @param frequency the frequency
+     * @param length sample length
+     * @param amplitude maximum amplitude
+     * @param sampleRate sample rate to use
+     * @return data as double[]
+     */
     public static double[] generateSignal(double frequency, int length, double amplitude, double sampleRate){
 
         double[] signal = new double[length];
@@ -133,40 +198,13 @@ public class AlgoHelper {
         return signal;
     }
 
-    public static double[] generateFMSignal(double topFreq, double bottomFreq, double chirpDuration, double chirpCycles, double sampleRate, float amplitude, boolean onlyRampUp){
-        int singleChirpSamples = (int) (chirpDuration * sampleRate);
-        double[] buffer = new double[(int) (singleChirpSamples * chirpCycles)];
-
-        double freqIncline = (topFreq - bottomFreq)/(chirpDuration);
-        double frequency = bottomFreq;
-
-        for(int cycle=0; cycle < chirpCycles; cycle++){
-
-            for (int sample = 0; sample < singleChirpSamples; sample++) {
-
-                double time = (double)sample/sampleRate;
-                double phase = 2.0*Math.PI*time*(frequency + (freqIncline/2.0)*time);
-
-                buffer[cycle*singleChirpSamples + sample]  = amplitude* FloatMath.sin((float) phase);
-
-            }
-            if(!onlyRampUp) {
-                freqIncline *= -1;
-                if(Math.abs(frequency - bottomFreq) < 1e-6)
-                    frequency = topFreq;
-                else
-                    frequency = bottomFreq;
-            }
-        }
-        return buffer;
-    }
-
     /**
-     * performs cross-correlation via FFT
+     * performs cross-correlation via FFT.<br>
+     * <b>CAUTION:</b> Can run out of memory for large sequences!
      *
      * @param signal1
      * @param signal2
-     * @return
+     * @return cross-correlation as double[]
      */
     public static double[] xcorr(double[] signal1, double[] signal2){
         int corrLength = Math.max(signal1.length, signal2.length);
@@ -224,116 +262,6 @@ public class AlgoHelper {
         x |= x >> 8;
         x |= x >> 16;
         return x+1;
-    }
-
-
-    //from: https://www.ee.columbia.edu/~ronw/code/dev/MEAPsoft/src/com/meapsoft/DSP.java
-    /**
-     * Convolves sequences a and b.  The resulting convolution has
-     * length a.length+b.length-1.
-     */
-    public static double[] conv(double[] a, double[] b)
-    {
-        double[] y = new double[a.length+b.length-1];
-
-        // make sure that a is the shorter sequence
-        if(a.length > b.length)
-        {
-            double[] tmp = a;
-            a = b;
-            b = tmp;
-        }
-
-        for(int lag = 0; lag < y.length; lag++)
-        {
-            y[lag] = 0;
-
-            // where do the two signals overlap?
-            int start = 0;
-            // we can't go past the left end of (time reversed) a
-            if(lag > a.length-1)
-                start = lag-a.length+1;
-
-            int end = lag;
-            // we can't go past the right end of b
-            if(end > b.length-1)
-                end = b.length-1;
-
-            //System.out.println("lag = " + lag +": "+ start+" to " + end);
-            for(int n = start; n <= end; n++)
-            {
-                //System.out.println("  ai = " + (lag-n) + ", bi = " + n);
-                y[lag] += b[n]*a[lag-n];
-            }
-        }
-
-        return(y);
-    }
-
-    /**
-     * Computes the cross correlation between sequences a and b.
-     */
-    public static double[] xcorr2(double[] a, double[] b)
-    {
-        int len = a.length;
-        if(b.length > a.length)
-            len = b.length;
-
-        return xcorr2(a, b, len-1);
-
-        // // reverse b in time
-        // double[] brev = new double[b.length];
-        // for(int x = 0; x < b.length; x++)
-        //     brev[x] = b[b.length-x-1];
-        //
-        // return conv(a, brev);
-    }
-
-    /**
-     * Computes the cross correlation between sequences a and b.
-     * maxlag is the maximum lag to
-     */
-    public static double[] xcorr2(double[] a, double[] b, int maxlag)
-    {
-        double[] y = new double[2*maxlag+1];
-        Arrays.fill(y, 0);
-
-        for(int lag = b.length-1, idx = maxlag-b.length+1;
-            lag > -a.length; lag--, idx++)
-        {
-            if(idx < 0)
-                continue;
-
-            if(idx >= y.length)
-                break;
-
-            // where do the two signals overlap?
-            int start = 0;
-            // we can't start past the left end of b
-            if(lag < 0)
-            {
-                //System.out.println("b");
-                start = -lag;
-            }
-
-            int end = a.length-1;
-            // we can't go past the right end of b
-            if(end > b.length-lag-1)
-            {
-                end = b.length-lag-1;
-                //System.out.println("a "+end);
-            }
-
-            //System.out.println("lag = " + lag +": "+ start+" to " + end+"   idx = "+idx);
-            for(int n = start; n <= end; n++)
-            {
-                //System.out.println("  bi = " + (lag+n) + ", ai = " + n);
-                y[idx] += a[n]*b[lag+n];
-            }
-            //System.out.println(y[idx]);
-        }
-
-        return(y);
     }
 
 }

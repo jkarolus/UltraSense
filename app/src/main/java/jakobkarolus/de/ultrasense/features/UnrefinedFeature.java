@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Vector;
 
 /**
- * Datamodel for each FeatureDetector to keep track of the current "Feature state".<br>
+ * Data model for each FeatureDetector to keep track of the current "Feature state".<br>
  * Keeps track of frequency values given time-steps.<br>
  *
  * <br><br>

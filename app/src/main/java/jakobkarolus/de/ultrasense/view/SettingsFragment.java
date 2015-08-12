@@ -16,6 +16,8 @@ import android.view.View;
 import jakobkarolus.de.ultrasense.R;
 
 /**
+ * Settings view of UltraSense
+ *<br><br>
  * Created by Jakob on 25.05.2015.
  */
 public class SettingsFragment extends PreferenceFragment  implements SharedPreferences.OnSharedPreferenceChangeListener {
@@ -138,7 +140,6 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
         menu.findItem(R.id.action_settings).setVisible(false);
         menu.findItem(R.id.action_compute_stft).setVisible(false);
         menu.findItem(R.id.action_show_last).setVisible(false);
-        menu.findItem(R.id.action_update_debug_info).setVisible(false);
     }
 
 }

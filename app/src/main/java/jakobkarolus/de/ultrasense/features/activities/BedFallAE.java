@@ -7,7 +7,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
 import static jakobkarolus.de.ultrasense.features.activities.InferredContext.*;
 
 /**
- * Analyzes the state of the user during sleep and detect emergency like falls
+ * Analyzes the state of the user during sleep and detects emergency like falls
  *
  * <br><br>
  * Created by Jakob on 06.08.2015.
@@ -61,7 +61,11 @@ public class BedFallAE extends ActivityExtractor {
     private static double LENGTH_MIN_BED_AWAKE_LOW = 0.24;
     private static double LENGTH_MAX_BED_AWAKE_LOW = 0.5;
 
-
+    /**
+     * creates a new BedFall AE. Initial state is BED_PRESENT
+     *
+     * @param callback the InferredContextCallback
+     */
     public BedFallAE(InferredContextCallback callback) {
         super(callback);
         changeContext(BED_PRESENT, "Initial state");

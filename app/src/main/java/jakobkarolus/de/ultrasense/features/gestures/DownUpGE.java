@@ -9,7 +9,7 @@ import jakobkarolus.de.ultrasense.features.Feature;
  * <br><br>
  * Created by Jakob on 29.07.2015.
  */
-public class DownUpGE extends TwoMotionGE{
+public class DownUpGE extends TwoFeatureGE {
 
 
     /**

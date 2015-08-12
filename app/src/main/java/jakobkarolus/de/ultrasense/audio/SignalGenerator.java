@@ -1,6 +1,8 @@
 package jakobkarolus.de.ultrasense.audio;
 
 /**
+ * Interface for all Signal generators used in UltraSense
+ *
  * Created by Jakob on 27.05.2015.
  */
 public interface SignalGenerator {

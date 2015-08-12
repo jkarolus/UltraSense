@@ -3,6 +3,8 @@ package jakobkarolus.de.ultrasense.audio;
 import android.util.FloatMath;
 
 /**
+ * Generate a frequency modulated continous wave signal of given frequencies, amplitude and duration
+ * <br><br>
  * Created by Jakob on 27.05.2015.
  */
 public class FMCWSignalGenerator implements SignalGenerator{
@@ -16,6 +18,17 @@ public class FMCWSignalGenerator implements SignalGenerator{
     private float amplitude;
     private boolean onlyRampUp;
 
+    /**
+     *  creates a new FMCWSignalGenerator to be used in the AudioManager
+     *
+     * @param topFreq top frequency
+     * @param bottomFreq bottom frequency
+     * @param chirpDuration the duration of one chirp in seconds
+     * @param chirpCycles amount of chirps
+     * @param sampleRate sample rate of the signal
+     * @param amplitude maximum amplitude
+     * @param onlyRampUp whether to only ramp up (sawtooth) or to ramp down too (triangular)
+     */
     public FMCWSignalGenerator(double topFreq, double bottomFreq, double chirpDuration, double chirpCycles, double sampleRate, float amplitude, boolean onlyRampUp) {
         this.topFreq = topFreq;
         this.bottomFreq = bottomFreq;

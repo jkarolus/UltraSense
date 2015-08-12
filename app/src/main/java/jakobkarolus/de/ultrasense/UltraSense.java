@@ -10,6 +10,9 @@ import jakobkarolus.de.ultrasense.view.UltraSenseFragment;
 import jakobkarolus.de.ultrasense.view.SettingsFragment;
 
 
+/**
+ * Main activity of UltraSense
+ */
 public class UltraSense extends ActionBarActivity{
 
 
