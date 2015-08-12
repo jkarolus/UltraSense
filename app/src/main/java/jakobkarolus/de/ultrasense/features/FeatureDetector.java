@@ -20,6 +20,7 @@ public abstract class FeatureDetector {
 
 
     private List<FeatureExtractor> featExtractors;
+    private FeatureProcessor featureProcessor;
 
     /**
      * the cumulating current features for each high and low doppler
@@ -32,11 +33,12 @@ public abstract class FeatureDetector {
      * creates a new FeatureDetector
      * @param timeIncreasePerStep the amount of real time that passes during one time-step (depends on the fft parameters)
      */
-    public FeatureDetector(double timeIncreasePerStep){
+    public FeatureDetector(double timeIncreasePerStep, FeatureProcessor featureProcessor){
         this.featExtractors = new Vector<>();
         this.timeIncreasePerStep = timeIncreasePerStep;
         this.currentHighFeature = new UnrefinedFeature(this.timeIncreasePerStep);
         this.currentLowFeature = new UnrefinedFeature(this.timeIncreasePerStep);
+        this.featureProcessor = featureProcessor;
     }
 
 
@@ -53,8 +55,11 @@ public abstract class FeatureDetector {
      * notifies all Feature Extractors that a positive doppler has been detected
      */
     public void notifyFeatureDetectedHigh(){
-        for(FeatureExtractor fe : this.featExtractors)
-            fe.onHighFeatureDetected(new UnrefinedFeature(currentHighFeature));
+        for(FeatureExtractor fe : this.featExtractors) {
+            Feature f = fe.onHighFeatureDetected(new UnrefinedFeature(currentHighFeature));
+            if(f != null)
+                featureProcessor.processFeature(f);
+        }
 
         this.currentHighFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }
@@ -63,8 +68,11 @@ public abstract class FeatureDetector {
      * notifies all Feature Extractors that a negative doppler has been detected
      */
     public void notifyFeatureDetectedLow(){
-        for(FeatureExtractor fe : this.featExtractors)
-            fe.onLowFeatureDetected(new UnrefinedFeature(currentLowFeature));
+        for(FeatureExtractor fe : this.featExtractors) {
+            Feature f = fe.onLowFeatureDetected(new UnrefinedFeature(currentLowFeature));
+            if(f != null)
+                featureProcessor.processFeature(f);
+        }
 
         this.currentLowFeature = new UnrefinedFeature(this.timeIncreasePerStep);
     }

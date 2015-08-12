@@ -19,7 +19,6 @@ import jakobkarolus.de.ultrasense.audio.SignalGenerator;
 import jakobkarolus.de.ultrasense.features.DummyFeatureDetector;
 import jakobkarolus.de.ultrasense.features.DummyFeatureProcessor;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;
-import jakobkarolus.de.ultrasense.features.FeatureProcessor;
 import jakobkarolus.de.ultrasense.features.GaussianFE;
 import jakobkarolus.de.ultrasense.features.MeanBasedFD;
 import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
@@ -107,7 +106,7 @@ public class UltraSenseModule {
                 double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
                 boolean ignoreNoise = settingsParameters.getBoolean(SettingsFragment.KEY_CW_IGNORE_NOISE, false);
                 double maxFeatureThreshold = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_MAX_FEAT_THRESHOLD, ""));
-                featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), ignoreNoise, maxFeatureThreshold);
+                featureDetector = new MeanBasedFD(new DummyFeatureProcessor(), SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), ignoreNoise, maxFeatureThreshold);
             }
             else
                 featureDetector = new DummyFeatureDetector(0.0);
@@ -117,8 +116,7 @@ public class UltraSenseModule {
         }
 
         audioManager.setSignalGenerator(signalGen);
-        FeatureProcessor fp = new DummyFeatureProcessor();
-        featureDetector.registerFeatureExtractor(new GaussianFE(fp));
+        featureDetector.registerFeatureExtractor(new GaussianFE(0));
 
         audioManager.setFeatureDetector(featureDetector);
         this.initialized = true;
@@ -137,12 +135,6 @@ public class UltraSenseModule {
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
 
-        if(noisy)
-            featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, frequency, 3, -50.0, 3, 2, 1, AlgoHelper.getHannWindow(fftLength), true, 15);
-        else
-            featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, frequency, 4, -55.0, 3, 2, 0, AlgoHelper.getHannWindow(fftLength), false, 0.0);
-
-
         gestureFP = new GestureFP(callback);
         List<GestureExtractor> gestureExtractors = new Vector<>();
         gestureExtractors.add(new DownUpGE());
@@ -153,7 +145,16 @@ public class UltraSenseModule {
                 initializeGEThresholds(ge, noisy);
             gestureFP.registerGestureExtractor(ge);
         }
-        featureDetector.registerFeatureExtractor(new GaussianFE(gestureFP));
+
+
+        if(noisy)
+            featureDetector = new MeanBasedFD(gestureFP, SAMPLE_RATE, fftLength, hopSize, frequency, 3, -50.0, 3, 2, 1, AlgoHelper.getHannWindow(fftLength), true, 15);
+        else
+            featureDetector = new MeanBasedFD(gestureFP, SAMPLE_RATE, fftLength, hopSize, frequency, 4, -55.0, 3, 2, 0, AlgoHelper.getHannWindow(fftLength), false, 0.0);
+
+
+
+        featureDetector.registerFeatureExtractor(new GaussianFE(0));
         audioManager.setFeatureDetector(featureDetector);
         this.initialized = true;
     }
@@ -167,11 +168,13 @@ public class UltraSenseModule {
     public void createWorkdeskPresenceDetector(InferredContextCallback callback){
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
-        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true, 8.0);
 
         activityFP = new ActivityFP();
         activityFP.registerActivityExtractor(new WorkdeskPresenceAE(callback));
-        featureDetector.registerFeatureExtractor(new GaussianFE(activityFP));
+
+        featureDetector = new MeanBasedFD(activityFP, SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 1.0, 0.5, 10, AlgoHelper.getHannWindow(fftLength), true, 8.0);
+
+        featureDetector.registerFeatureExtractor(new GaussianFE(0));
         audioManager.setFeatureDetector(featureDetector);
         this.initialized = true;
 
@@ -187,11 +190,14 @@ public class UltraSenseModule {
     public void createBedFallDetector(InferredContextCallback callback){
 
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
-        featureDetector = new MeanBasedFD(SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 2.0, 1.0, 5, AlgoHelper.getHannWindow(fftLength), true, 20.0);
 
         activityFP = new ActivityFP();
         activityFP.registerActivityExtractor(new BedFallAE(callback));
-        featureDetector.registerFeatureExtractor(new GaussianFE(activityFP));
+
+        featureDetector = new MeanBasedFD(activityFP, SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 2.0, 1.0, 5, AlgoHelper.getHannWindow(fftLength), true, 20.0);
+
+
+        featureDetector.registerFeatureExtractor(new GaussianFE(0));
         audioManager.setFeatureDetector(featureDetector);
         this.initialized = true;
 

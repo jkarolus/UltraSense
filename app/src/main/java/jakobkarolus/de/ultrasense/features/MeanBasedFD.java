@@ -32,6 +32,7 @@ public class MeanBasedFD extends FeatureDetector{
     /**
      * creates a new MeanBasedFD with the given feature detection parameters
      *
+     * @param featureProcessor the FeatureProcessor associated with this FeatureDetector
      * @param sampleRate sampleRate of the signal
      * @param fftLength fft length to use
      * @param hopSize hop size during fft processing
@@ -45,8 +46,8 @@ public class MeanBasedFD extends FeatureDetector{
      * @param ignoreNoise whether to ignoreNoise
      * @param maxFeatureThreshold the maximum allowed feature value, only valid in conjunction with ignoreNoise==true
      */
-    public MeanBasedFD(double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win, boolean ignoreNoise, double maxFeatureThreshold) {
-        super((double) hopSize / sampleRate);
+    public MeanBasedFD(FeatureProcessor featureProcessor, double sampleRate, int fftLength, int hopSize, double carrierFrequency, int halfCarrierWidth, double magnitudeThreshold, double featHighThreshold, double featLowThreshold, int featSlackWidth, double[] win, boolean ignoreNoise, double maxFeatureThreshold) {
+        super((double) hopSize / sampleRate, featureProcessor);
         this.fftLength = fftLength;
         this.hopSize = hopSize;
         this.carrierIdx = ((carrierFrequency/(sampleRate/2.0))*(fftLength/2+1))-1;

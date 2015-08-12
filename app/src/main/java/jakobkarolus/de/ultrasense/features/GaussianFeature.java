@@ -5,14 +5,15 @@ package jakobkarolus.de.ultrasense.features;
  *<br><br>
  * Created by Jakob on 02.07.2015.
  */
-public class GaussianFeature implements Feature{
+public class GaussianFeature extends Feature{
 
     private double mu;
     private double sigma;
     private double weight;
 
 
-    public GaussianFeature(double mu, double sigma, double weight) {
+    public GaussianFeature(int extractorId, double mu, double sigma, double weight) {
+        super(extractorId);
         this.mu = mu;
         this.sigma = sigma;
         this.weight = weight;

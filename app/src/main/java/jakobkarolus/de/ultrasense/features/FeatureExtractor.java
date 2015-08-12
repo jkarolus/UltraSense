@@ -4,34 +4,46 @@ package jakobkarolus.de.ultrasense.features;
  *
  * Implements a listener to the observable FeatureDetector.<br>
  * Each subclass should create its own Feature representation upon getting notified.
- *<br>
- *Holds a reference to FeatureProcessor to process individual Features
+ * <br>
  *
  * Created by Jakob on 02.07.2015.
  */
 public abstract class FeatureExtractor {
 
-    private FeatureProcessor featProcessor;
+    private int id;
 
-    public FeatureExtractor(FeatureProcessor featProcessor) {
-        this.featProcessor = featProcessor;
+
+    /**
+     * creates a new FeatureExtractor with the given id.<br>
+     * The id used to discern different FEs when passing their feature to the FeatureProcessor.
+     *
+     * @param id identifier for this specific FeatureExtractor
+     */
+    public FeatureExtractor(int id) {
+        this.id = id;
     }
 
     /**
      * notify method, which gets called when a positive doppler shift was detected
      * @param uF the UnrefinedFeature encapsulating the data
+     * @return Feature corresponding to the data, or null if not applicable
      */
-    public abstract void onHighFeatureDetected(UnrefinedFeature uF);
+    public abstract Feature onHighFeatureDetected(UnrefinedFeature uF);
 
     /**
      * notify method, which gets called when a negative doppler shift was detected
      * @param uF the UnrefinedFeature encapsulating the data
+     * @return Feature corresponding to the data, or null if not applicable
      */
-    public abstract void onLowFeatureDetected(UnrefinedFeature uF);
+    public abstract Feature onLowFeatureDetected(UnrefinedFeature uF);
 
-
-    public FeatureProcessor getFeatProcessor() {
-        return featProcessor;
+    /**
+     *
+     * @return the identifier for this FeatureExtractor
+     */
+    public int getId() {
+        return id;
     }
+
 
 }

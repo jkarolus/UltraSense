@@ -7,8 +7,14 @@ package jakobkarolus.de.ultrasense.features;
  */
 public class DummyFeatureDetector extends FeatureDetector{
 
+
+    /**
+     * creates a new DummyFeatureDetector
+     *
+     * @param timeIncreasePerStep the amount of real time that passes during one time-step (depends on the fft parameters)
+     */
     public DummyFeatureDetector(double timeIncreasePerStep) {
-        super(timeIncreasePerStep);
+        super(timeIncreasePerStep, new DummyFeatureProcessor());
     }
 
     @Override

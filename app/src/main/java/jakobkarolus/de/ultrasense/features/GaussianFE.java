@@ -17,16 +17,20 @@ import jakobkarolus.de.ultrasense.view.UltraSenseFragment;
 public class GaussianFE extends FeatureExtractor{
 
 
-    public GaussianFE(FeatureProcessor featProc) {
-        super(featProc);
+    /**
+     * creates a new GaussianFE with the given id.<br>
+     * The id used to discern different FEs when passing their feature to the FeatureProcessor.
+     *
+     * @param id identifier for this specific FeatureExtractor
+     */
+    public GaussianFE(int id) {
+        super(id);
     }
 
     @Override
-    public void onHighFeatureDetected(UnrefinedFeature uF) {
+    public Feature onHighFeatureDetected(UnrefinedFeature uF) {
 
-        GaussianFeature gf = fitGaussian(uF);
-        if(gf != null)
-            getFeatProcessor().processFeature(fitGaussian(uF));
+        return fitGaussian(uF);
 
     }
 
@@ -83,15 +87,17 @@ public class GaussianFE extends FeatureExtractor{
         }
 
 
-        return new GaussianFeature(mu, sigma, weight);
+        return new GaussianFeature(getId(), mu, sigma, weight);
     }
 
     @Override
-    public void onLowFeatureDetected(UnrefinedFeature uF) {
+    public Feature onLowFeatureDetected(UnrefinedFeature uF) {
 
         GaussianFeature gf = fitGaussian(uF);
         if(gf != null)
-            getFeatProcessor().processFeature(new GaussianFeature(gf.getTime(), gf.getLength(), gf.getWeight()*(-1)));
+            return new GaussianFeature(gf.getExtractorId(), gf.getTime(), gf.getLength(), gf.getWeight()*(-1));
+        else
+            return null;
 
     }
 

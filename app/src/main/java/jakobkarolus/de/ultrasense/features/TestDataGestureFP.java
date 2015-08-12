@@ -46,7 +46,7 @@ public class TestDataGestureFP extends GestureFP {
                 double mu = Double.parseDouble(scan.next());
                 double sigma = Double.parseDouble(scan.next());
                 double weight = Double.parseDouble(scan.next());
-                testFeatures.add(new GaussianFeature(mu, sigma, weight));
+                testFeatures.add(new GaussianFeature(0, mu, sigma, weight));
                 scan.close();
             }
             outerScanner.close();
