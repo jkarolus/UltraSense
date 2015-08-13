@@ -76,6 +76,8 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         ultraSenseModule = new UltraSenseModule(getActivity());
         stftManager = new StftManager();
         setHasOptionsMenu(true);
+        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+
     }
 
     @Override
