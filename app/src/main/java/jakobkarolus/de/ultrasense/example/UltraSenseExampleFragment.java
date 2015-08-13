@@ -93,7 +93,7 @@ public class UltraSenseExampleFragment extends Fragment implements GestureCallba
         //show a dialog for the two scenarios
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Choose Activity");
-        builder.setItems(new String[]{"WordkDesk", "BedFall"}, new DialogInterface.OnClickListener() {
+        builder.setItems(new String[]{"WorkDesk", "BedFall"}, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int index) {
 

@@ -194,7 +194,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Choose ActivityExtractor");
-        builder.setItems(new String[]{"WordkDesk", "Bed"}, new DialogInterface.OnClickListener() {
+        builder.setItems(new String[]{"WorkDesk", "Bed"}, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int index) {
 

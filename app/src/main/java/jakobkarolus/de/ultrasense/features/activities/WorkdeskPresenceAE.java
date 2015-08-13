@@ -34,7 +34,7 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
 
     /**
-     * creates a new WorddeskPresence AE. Initial state is PRESENT
+     * creates a new WorkdeskPresence AE. Initial state is PRESENT
      *
      * @param callback the InferredContextCallback
      */
