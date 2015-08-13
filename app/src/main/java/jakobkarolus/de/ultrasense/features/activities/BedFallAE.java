@@ -18,7 +18,7 @@ public class BedFallAE extends ActivityExtractor {
     /**
      * does not include bed_rect_1-3 -> unlikely scenario
      */
-    private static double WEIGHT_MIN_WITHDRAW = -10.0;
+    private static double WEIGHT_MIN_WITHDRAW = -15.0;
     private static double WEIGHT_MAX_WITHDRAW = -5.0;
     private static double LENGTH_MIN_WITHDRAW = 0.5;
     private static double LENGTH_MAX_WITHDRAW = 1.2;
@@ -34,8 +34,8 @@ public class BedFallAE extends ActivityExtractor {
     /**
      * does include appr_rect_1-2
      */
-    private static double WEIGHT_MIN_APPROACH = 8.0;
-    private static double WEIGHT_MAX_APPROACH = 15;
+    private static double WEIGHT_MIN_APPROACH = 5.0;
+    private static double WEIGHT_MAX_APPROACH = 15.0;
     private static double LENGTH_MIN_APPROACH = 0.5;
     private static double LENGTH_MAX_APPROACH = 1.4;
 
@@ -76,12 +76,12 @@ public class BedFallAE extends ActivityExtractor {
 
         processFeatureList(featureList);
 
-        if(userIsWithdrawing(feature) && getCurrentContext() == BED_AWAKE){
+        if(userIsWithdrawing(feature) && (getCurrentContext() == BED_AWAKE || getCurrentContext() == BED_SLEEPING || getCurrentContext() == BED_PRESENT)){
             changeContext(BED_AWAY, "User walking away");
             return true;
         }
 
-        if(userHasFallen(feature) && getCurrentContext() == BED_AWAKE){
+        if(userHasFallen(feature) && (getCurrentContext() == BED_AWAKE || getCurrentContext() == BED_SLEEPING || getCurrentContext() == BED_PRESENT)){
             changeContext(BED_FALL, "User has fallen");
             return true;
         }

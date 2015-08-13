@@ -51,14 +51,14 @@ public class DownUpGE extends TwoFeatureGE {
     private static final double F1_LENGTH_MIN = 0.06;
     private static final double F1_LENGTH_MAX = 0.18;
     private static final double F1_WEIGHT_MIN = 1.65;
-    private static final double F1_WEIGHT_MAX = 4.7; //4.3 for only noisy
+    private static final double F1_WEIGHT_MAX = 6.0; //4.3 for only noisy
 
     private static final double F2_LENGTH_MIN = 0.08;
     private static final double F2_LENGTH_MAX = 0.18;
-    private static final double F2_WEIGHT_MIN = -4.8; //-4.3
-    private static final double F2_WEIGHT_MAX = -2.0;
+    private static final double F2_WEIGHT_MIN = -6.0; //-4.3
+    private static final double F2_WEIGHT_MAX = -1.5;
 
-    private static final double TIME_DIST_MIN = 0.30;
+    private static final double TIME_DIST_MIN = 0.281;
     private static final double TIME_DIST_MAX = 0.8;
 
 

@@ -417,7 +417,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
     private void startRecord() throws IOException {
 
-        ultraSenseModule.createCustomScenario(PreferenceManager.getDefaultSharedPreferences(getActivity()));
+        ultraSenseModule.createCustomScenario(PreferenceManager.getDefaultSharedPreferences(getActivity()), UltraSenseFragment.this, UltraSenseFragment.this);
         updateDebugInfo();
 
         recordButton.setText(R.string.button_stop_record);

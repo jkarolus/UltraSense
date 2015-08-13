@@ -19,12 +19,12 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
     private static final double WEIGHT_MIN_APPROACH = 4.0;
     private static final double WEIGHT_MAX_APPROACH = 20.0;
     private static final double LENGTH_MIN_APPROACH = 0.5;
-    private static final double LENGTH_MAX_APPROACH = 1.15;
+    private static final double LENGTH_MAX_APPROACH = 1.3;
 
     private static final double WEIGHT_MIN_WITHDRAW = -20.0;
     private static final double WEIGHT_MAX_WITHDRAW = -3.0;
     private static final double LENGTH_MIN_WITHDRAW = 0.4;
-    private static final double LENGTH_MAX_WITHDRAW = 1.1;
+    private static final double LENGTH_MAX_WITHDRAW = 1.3;
 
     private static final int COUNTER_THRESHOLD_WORKING = 20;
     private static final int UPDATES_AMOUNT_THRESHOLD = 5;

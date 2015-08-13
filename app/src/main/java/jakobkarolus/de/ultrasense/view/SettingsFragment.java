@@ -46,6 +46,9 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     public static final String KEY_FEAT_SLACK = "pref_key_feat_slack";
     public static final String KEY_CW_IGNORE_NOISE = "pref_key_ignore_noise";
     public static final String KEY_CW_MAX_FEAT_THRESHOLD = "pref_max_feat_threshold";
+    public static final String KEY_CW_EXTRACTORS = "pref_key_extractors";
+    public static final String KEY_CW_NOISY_ENV = "pref_key_noisy_env";
+
 
     public static final String SETTINGS_WARNING_IGNORE = "pref_ignore_settings_warning";
 
@@ -103,7 +106,7 @@ public class SettingsFragment extends PreferenceFragment  implements SharedPrefe
     private void updateSummaryForPreference(Preference p){
         if(p instanceof ListPreference){
             ListPreference lp = (ListPreference) p;
-            lp.setSummary(lp.getValue());
+            lp.setSummary(lp.getEntry());
         }
         if(p instanceof EditTextPreference){
             EditTextPreference ep = (EditTextPreference) p;

@@ -5,6 +5,8 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -318,6 +320,16 @@ public class AudioManager{
                 bytes.putShort(s);
             }
             output.write(bytes.array());
+
+            MediaScannerConnection.scanFile(ctx,
+                    new String[]{file.toString()}, null,
+                    new MediaScannerConnection.OnScanCompletedListener() {
+                        public void onScanCompleted(String path, Uri uri) {
+                            Log.i("ExternalStorage", "Scanned " + path + ":");
+                            Log.i("ExternalStorage", "-> uri=" + uri);
+                        }
+                    });
+
         }
 
         finally {

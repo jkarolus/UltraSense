@@ -24,6 +24,19 @@
         android:title="@string/cw_paras"
         android:key="pref_key_cw_paras">
 
+        <ListPreference
+            android:key="pref_key_extractors"
+            android:title="@string/pref_key_extractors"
+            android:dialogTitle="@string/pref_key_extractors"
+            android:entries="@array/pref_key_extractors_entries"
+            android:entryValues="@array/pref_key_extractors_values"
+            android:defaultValue="0" />
+
+        <CheckBoxPreference
+            android:key="pref_key_noisy_env"
+            android:title="@string/pref_key_noisy_env"
+            android:defaultValue="false"/>
+
         <EditTextPreference
             android:key="pref_key_db_threshold"
             android:title="@string/pref_key_db_threshold"

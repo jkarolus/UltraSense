@@ -19,6 +19,7 @@ import jakobkarolus.de.ultrasense.audio.SignalGenerator;
 import jakobkarolus.de.ultrasense.features.DummyFeatureDetector;
 import jakobkarolus.de.ultrasense.features.DummyFeatureProcessor;
 import jakobkarolus.de.ultrasense.features.FeatureDetector;
+import jakobkarolus.de.ultrasense.features.FeatureProcessor;
 import jakobkarolus.de.ultrasense.features.GaussianFE;
 import jakobkarolus.de.ultrasense.features.MeanBasedFD;
 import jakobkarolus.de.ultrasense.features.activities.ActivityFP;
@@ -70,9 +71,12 @@ public class UltraSenseModule {
      * Use when experimenting with CW/FMCW in conjunction with the Recording function
      *
      * @param settingsParameters the settings defined by the user (settings tab)
+     * @param gestureCallback the GestureCallback to use if specified (pass null if no GE was selected)
+     * @param inferredContextCallback the InferredContextCallback to use if specified (pass null if no AE was selected)
      * @throws IllegalArgumentException
      */
-    public void createCustomScenario(SharedPreferences settingsParameters) throws IllegalArgumentException{
+    public void createCustomScenario(SharedPreferences settingsParameters, GestureCallback gestureCallback, InferredContextCallback inferredContextCallback) throws IllegalArgumentException{
+        resetState();
         SignalGenerator signalGen;
         String mode = settingsParameters.getString(SettingsFragment.PREF_MODE, "CW");
         try {
@@ -106,7 +110,11 @@ public class UltraSenseModule {
                 double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
                 boolean ignoreNoise = settingsParameters.getBoolean(SettingsFragment.KEY_CW_IGNORE_NOISE, false);
                 double maxFeatureThreshold = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_MAX_FEAT_THRESHOLD, ""));
-                featureDetector = new MeanBasedFD(new DummyFeatureProcessor(), SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), ignoreNoise, maxFeatureThreshold);
+                boolean usePreCalibration = settingsParameters.getBoolean(SettingsFragment.KEY_USE_PRECALIBRATION, true);
+                boolean noisy = settingsParameters.getBoolean(SettingsFragment.KEY_CW_NOISY_ENV, false);
+
+                FeatureProcessor fp = initializeFPForCustomScenario(settingsParameters.getString(SettingsFragment.KEY_CW_EXTRACTORS, "0"), gestureCallback, inferredContextCallback, usePreCalibration, noisy);
+                featureDetector = new MeanBasedFD(fp, SAMPLE_RATE, fftLength, hopSize, freq, halfCarrierWidth, dbThreshold, highFeatureThr, lowFeatureThr, slackWidth, AlgoHelper.getHannWindow(fftLength), ignoreNoise, maxFeatureThreshold);
             }
             else
                 featureDetector = new DummyFeatureDetector(0.0);
@@ -132,7 +140,7 @@ public class UltraSenseModule {
      * @param usePreCalibration whether to use precalibrated parameters for feature extraction specified by the developer
      */
     public void createGestureDetector(GestureCallback callback, boolean noisy, boolean usePreCalibration){
-
+        resetState();
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
 
         gestureFP = new GestureFP(callback);
@@ -166,7 +174,7 @@ public class UltraSenseModule {
      * @param callback the InferredContextCallback to inform about context changes
      */
     public void createWorkdeskPresenceDetector(InferredContextCallback callback){
-
+        resetState();
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
 
         activityFP = new ActivityFP();
@@ -188,7 +196,7 @@ public class UltraSenseModule {
      * @param callback the InferredContextCallback to inform about context changes
      */
     public void createBedFallDetector(InferredContextCallback callback){
-
+        resetState();
         audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
 
         activityFP = new ActivityFP();
@@ -329,5 +337,54 @@ public class UltraSenseModule {
             throw new IllegalStateException("You must record something before saving it");
 
         audioManager.saveWaveFiles(fileName);
+    }
+
+
+    private void resetState(){
+        activityFP = null;
+        gestureFP = null;
+    }
+
+    private FeatureProcessor initializeFPForCustomScenario(String extractors, GestureCallback gestureCallback, InferredContextCallback inferredContextCallback, boolean usePreCalibration, boolean noisy) {
+        int extractorId = Integer.parseInt(extractors);
+
+        if(extractorId==0)
+            return new DummyFeatureProcessor();
+
+        else if(extractorId==1 || extractorId == 2 || extractorId==3){
+            List<GestureExtractor> gestureExtractors = new Vector<>();
+
+            if(extractorId==1) {
+                gestureExtractors.add(new DownUpGE());
+                gestureExtractors.add(new SwipeGE());
+            }
+            else if(extractorId ==2){
+                gestureExtractors.add(new DownUpGE());
+            }
+            else{
+                gestureExtractors.add(new SwipeGE());
+            }
+            gestureFP = new GestureFP(gestureCallback);
+            for (GestureExtractor ge : gestureExtractors) {
+                if (!usePreCalibration)
+                    initializeGEThresholds(ge, noisy);
+                gestureFP.registerGestureExtractor(ge);
+            }
+
+            return gestureFP;
+        }
+
+        else if(extractorId==4){
+            activityFP = new ActivityFP();
+            activityFP.registerActivityExtractor(new WorkdeskPresenceAE(inferredContextCallback));
+            return activityFP;
+        }
+        else if(extractorId==5){
+            activityFP = new ActivityFP();
+            activityFP.registerActivityExtractor(new BedFallAE(inferredContextCallback));
+            return activityFP;
+        }
+
+        return new DummyFeatureProcessor();
     }
 }

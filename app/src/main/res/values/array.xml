@@ -21,4 +21,22 @@
         <item>2048</item>
         <item>1024</item>
     </string-array>
+
+    <string-array name="pref_key_extractors_entries">
+        <item>None</item>
+        <item>GE: DownUp and Swipe</item>
+        <item>GE: DownUp</item>
+        <item>GE: Swipe</item>
+        <item>AE: Workdesk</item>
+        <item>AE: BedFall</item>
+
+    </string-array>
+    <string-array name="pref_key_extractors_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
 </resources>
