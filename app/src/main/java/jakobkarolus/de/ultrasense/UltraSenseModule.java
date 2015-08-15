@@ -2,6 +2,7 @@ package jakobkarolus.de.ultrasense;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -91,7 +92,7 @@ public class UltraSenseModule {
             }
             else {
                 double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
-                signalGen =  new CWSignalGenerator(freq, 0.1, 1.0, SAMPLE_RATE);
+                signalGen =  new CWSignalGenerator(freq, 0.5, 1.0, SAMPLE_RATE);
             }
         }catch (NumberFormatException e) {
             throw new IllegalArgumentException("Specified FMCW Parameters are not valid!", e);
@@ -202,7 +203,7 @@ public class UltraSenseModule {
         activityFP = new ActivityFP();
         activityFP.registerActivityExtractor(new BedFallAE(callback));
 
-        featureDetector = new MeanBasedFD(activityFP, SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 2.0, 1.0, 5, AlgoHelper.getHannWindow(fftLength), true, 20.0);
+        featureDetector = new MeanBasedFD(activityFP, SAMPLE_RATE, fftLength, hopSize, frequency, 5, -60.0, 3.0, 1.5, 5, AlgoHelper.getHannWindow(fftLength), true, 15.0);
 
 
         featureDetector.registerFeatureExtractor(new GaussianFE(0));
@@ -336,7 +337,16 @@ public class UltraSenseModule {
         if(!audioManager.hasRecordData())
             throw new IllegalStateException("You must record something before saving it");
 
-        audioManager.saveWaveFiles(fileName);
+        try {
+            audioManager.saveWaveFiles(fileName);
+        }catch(OutOfMemoryError e){
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(activity, "Record too large to be saved!", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
     }
 
 

@@ -53,7 +53,7 @@ import jakobkarolus.de.ultrasense.features.gestures.GestureExtractor;
  */
 public class UltraSenseFragment extends Fragment implements GestureCallback, InferredContextCallback {
 
-    public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "PulseRadar" + File.separator;
+    public static final String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + File.separator + "UltraSense" + File.separator;
 
     private StftManager stftManager;
 
@@ -404,9 +404,16 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
     }
 
     @Override
-    public void onInferredContextChange(InferredContext oldContext, InferredContext newContext, String reason) {
+    public void onInferredContextChange(final InferredContext oldContext, final InferredContext newContext, final String reason) {
 
         Log.i("CONTEXT", "Changed from " + oldContext + " to " + newContext + ": " + reason);
+        if(debugInfo != null)
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    debugInfo.setText(debugInfo.getText() + "\nChanged from " + oldContext + " to " + newContext + ": " + reason);
+                }
+            });
 
     }
 
@@ -488,7 +495,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
                 buffer.append(ge.getName() + ": " + ge.getThresholds() + "\n");
             }
         }
-        debugInfo.setText(buffer.toString());
+        debugInfo.setText(buffer.toString() + "\n");
     }
 
 

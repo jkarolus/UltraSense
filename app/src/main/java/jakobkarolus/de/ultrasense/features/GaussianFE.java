@@ -1,12 +1,6 @@
 package jakobkarolus.de.ultrasense.features;
 
-import android.util.Log;
-
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.List;
-
-import jakobkarolus.de.ultrasense.view.UltraSenseFragment;
 
 /**
  * A FeatureExtractor implementing linear least-square approx using a Gaussian curve
@@ -60,32 +54,11 @@ public class GaussianFE extends FeatureExtractor{
         double weight = (1.0/innerProd1)*innerProd2;
 
         if(Double.isNaN(weight)){
-            Log.e("GFE", "NaN");
+            return null;
         }
 
-        if(Math.abs(weight-3.42311923) <= 1e-3) {
-            try {
-                FileWriter writer = new FileWriter(UltraSenseFragment.fileDir + "last_feat.txt");
-                writer.write("x: ");
-                for (double d : x) {
-                    writer.write("" + d + ",");
-                }
-                writer.flush();
-
-                writer.write("\ny: ");
-                for (double d : y) {
-                    writer.write("" + d + ",");
-                }
-                writer.flush();
-                writer.write("\nX*X': " + innerProd1);
-                writer.write("\nX*y: " + innerProd2);
-                writer.flush();
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+        if(Math.abs(weight - 0.0) < 1e-4)
+            return null;
 
         return new GaussianFeature(getId(), mu, sigma, weight);
     }

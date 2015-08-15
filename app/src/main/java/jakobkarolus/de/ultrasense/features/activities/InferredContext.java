@@ -8,13 +8,14 @@ package jakobkarolus.de.ultrasense.features.activities;
  */
 public enum InferredContext {
 
-    PRESENT,
-    AWAY,
-    BED_SLEEPING,
-    BED_AWAKE,
+    DESK_PRESENT,
+    DESK_AWAY,
     BED_PRESENT,
     BED_AWAY,
     BED_FALL,
+    BED_POTENTIAL_FALL,
+    BED_AWAKE,
+    BED_SLEEPING,
     UNKNOWN;
 
 }

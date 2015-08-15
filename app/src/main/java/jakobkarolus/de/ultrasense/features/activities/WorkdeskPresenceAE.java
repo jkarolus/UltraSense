@@ -34,13 +34,13 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
 
     /**
-     * creates a new WorkdeskPresence AE. Initial state is PRESENT
+     * creates a new WorkdeskPresence AE. Initial state is DESK_PRESENT
      *
      * @param callback the InferredContextCallback
      */
     public WorkdeskPresenceAE(InferredContextCallback callback) {
         super(callback);
-        changeContext(InferredContext.PRESENT, "Initial state");
+        changeContext(InferredContext.DESK_PRESENT, "Initial state");
         this.noFeaturePresentCounter = 0;
         this.regularUpdatesCounter = 0;
 
@@ -54,13 +54,13 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
 
         //we dont want to consume the feature, to get a better time estimate for switching context due to (in-)activity
         if(userIsWithdrawing(f)){
-            changeContext(InferredContext.AWAY, "User withdrawing");
+            changeContext(InferredContext.DESK_AWAY, "User withdrawing");
             regularUpdatesCounter = 0;
             return false;
         }
 
         if(userIsApproaching(f)) {
-            changeContext(InferredContext.PRESENT, "User approaching");
+            changeContext(InferredContext.DESK_PRESENT, "User approaching");
             return false;
         }
 
@@ -83,16 +83,16 @@ public class WorkdeskPresenceAE extends ActivityExtractor{
         }
 
         //decide whether to change context based on (in-)activity
-        if(getCurrentContext() == InferredContext.PRESENT){
+        if(getCurrentContext() == InferredContext.DESK_PRESENT){
             if(noFeaturePresentCounter >= COUNTER_THRESHOLD_WORKING){
-                //change context to AWAY
-                changeContext(InferredContext.AWAY, "Due to inactivity");
+                //change context to DESK_AWAY
+                changeContext(InferredContext.DESK_AWAY, "Due to inactivity");
             }
         }
 
-        if(getCurrentContext() == InferredContext.AWAY){
+        if(getCurrentContext() == InferredContext.DESK_AWAY){
             if(regularUpdatesCounter >= UPDATES_AMOUNT_THRESHOLD){
-                changeContext(InferredContext.PRESENT, "Activity while not being present");
+                changeContext(InferredContext.DESK_PRESENT, "Activity while not being present");
             }
         }
 
