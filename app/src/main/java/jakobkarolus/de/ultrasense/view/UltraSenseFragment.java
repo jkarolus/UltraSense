@@ -9,6 +9,7 @@ import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import jakobkarolus.de.ultrasense.CalibrationActivity;
 import jakobkarolus.de.ultrasense.R;
 import jakobkarolus.de.ultrasense.UltraSenseModule;
 import jakobkarolus.de.ultrasense.algorithm.StftManager;
@@ -564,6 +566,7 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
         menu.findItem(R.id.action_settings).setVisible(true);
         menu.findItem(R.id.action_compute_stft).setVisible(true);
         menu.findItem(R.id.action_show_last).setVisible(true);
+        menu.findItem(R.id.action_calib_fd).setVisible(true);
 
     }
 
@@ -579,6 +582,13 @@ public class UltraSenseFragment extends Fragment implements GestureCallback, Inf
 
         if (id == R.id.action_show_last){
             showLastSpec();
+            return true;
+        }
+
+        if(id == R.id.action_calib_fd){
+            item.setVisible(false);
+            Intent intent = new Intent(getActivity(), CalibrationActivity.class);
+            getActivity().startActivity(intent);
             return true;
         }
 

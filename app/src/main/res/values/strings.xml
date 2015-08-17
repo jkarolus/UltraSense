@@ -37,5 +37,8 @@
     <string name="pref_max_feat_threshold">Max Feature Threshold (when ignoring noise) </string>
     <string name="pref_key_extractors">Extractors to use</string>
     <string name="pref_key_noisy_env">Consider noisy Environment</string>
+    <string name="app_name_calibration">UltraSenseCalibration</string>
+    <string name="calib_message">Blabla info calibration</string>
+    <string name="button_record_calibration">Record Calibration Audio</string>
 
 </resources>

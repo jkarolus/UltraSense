@@ -86,6 +86,7 @@ public class ActivityFP extends FeatureProcessor {
         for(ActivityExtractor ae : activityExtractors){
             if(!ae.processNewFeature(feature, getFeatures())) {
                 getFeatures().add(feature);
+                Log.i("FEATURE", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));
             }
             else{
                 Log.i("FEATURE (CONSUMED)", "" + df.format(feature.getTime()) + ";" + df.format(feature.getLength()) + ";" + df.format(feature.getWeight()));

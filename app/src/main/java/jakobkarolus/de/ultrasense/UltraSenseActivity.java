@@ -13,7 +13,7 @@ import jakobkarolus.de.ultrasense.view.SettingsFragment;
 /**
  * Main activity of UltraSense
  */
-public class UltraSense extends ActionBarActivity{
+public class UltraSenseActivity extends ActionBarActivity{
 
 
     @Override

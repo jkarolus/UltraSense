@@ -20,12 +20,25 @@ public class CWSignalGenerator implements SignalGenerator{
      * @param freq the frequency in Hz
      * @param length length of the signal in seconds
      * @param amplitude maximum amplitude
-     * @param sampleRate
+     * @param sampleRate the sample rate of the signal
      */
     public CWSignalGenerator(double freq, double length, double amplitude, double sampleRate) {
         this.freq = freq;
         this.length = length;
         this.amplitude = amplitude;
+        this.sampleRate = sampleRate;
+    }
+
+    /**
+     * creates a new CWSignalGenerator to be used in the AudioManager with default parameters
+     *
+     * @param freq the frequency in Hz
+     * @param sampleRate the sample rate of the signal
+     */
+    public CWSignalGenerator(double freq, double sampleRate) {
+        this.freq = freq;
+        this.length = 0.5;
+        this.amplitude = 1.0;
         this.sampleRate = sampleRate;
     }
 

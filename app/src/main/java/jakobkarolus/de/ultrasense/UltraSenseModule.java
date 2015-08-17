@@ -92,7 +92,7 @@ public class UltraSenseModule {
             }
             else {
                 double freq = Double.parseDouble(settingsParameters.getString(SettingsFragment.KEY_CW_FREQ, ""));
-                signalGen =  new CWSignalGenerator(freq, 0.5, 1.0, SAMPLE_RATE);
+                signalGen =  new CWSignalGenerator(freq, SAMPLE_RATE);
             }
         }catch (NumberFormatException e) {
             throw new IllegalArgumentException("Specified FMCW Parameters are not valid!", e);
@@ -142,7 +142,7 @@ public class UltraSenseModule {
      */
     public void createGestureDetector(GestureCallback callback, boolean noisy, boolean usePreCalibration){
         resetState();
-        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
+        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, SAMPLE_RATE));
 
         gestureFP = new GestureFP(callback);
         List<GestureExtractor> gestureExtractors = new Vector<>();
@@ -176,7 +176,7 @@ public class UltraSenseModule {
      */
     public void createWorkdeskPresenceDetector(InferredContextCallback callback){
         resetState();
-        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
+        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, SAMPLE_RATE));
 
         activityFP = new ActivityFP();
         activityFP.registerActivityExtractor(new WorkdeskPresenceAE(callback));
@@ -198,7 +198,7 @@ public class UltraSenseModule {
      */
     public void createBedFallDetector(InferredContextCallback callback){
         resetState();
-        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, 0.1, 1.0, SAMPLE_RATE));
+        audioManager.setSignalGenerator(new CWSignalGenerator(frequency, SAMPLE_RATE));
 
         activityFP = new ActivityFP();
         activityFP.registerActivityExtractor(new BedFallAE(callback));

@@ -18,21 +18,21 @@ public class BedFallAE extends ActivityExtractor {
 
     private static double WEIGHT_MIN_APPROACH = 5.0;
     private static double WEIGHT_MAX_APPROACH = 15.0;
-    private static double LENGTH_MIN_APPROACH = 0.5;
+    private static double LENGTH_MIN_APPROACH = 0.4;
     private static double LENGTH_MAX_APPROACH = 1.4;
 
     private static double WEIGHT_MIN_WITHDRAW = -15.0;
-    private static double WEIGHT_MAX_WITHDRAW = -3.0;
-    private static double LENGTH_MIN_WITHDRAW = 0.4;
+    private static double WEIGHT_MAX_WITHDRAW = -4.0;
+    private static double LENGTH_MIN_WITHDRAW = 0.37;
     private static double LENGTH_MAX_WITHDRAW = 1.5;
 
     private static double WEIGHT_MIN_FALL = -15.0;
-    private static double WEIGHT_MAX_FALL = -3.2;
+    private static double WEIGHT_MAX_FALL = -3.8;
     private static double LENGTH_MIN_FALL = 0.1;
-    private static double LENGTH_MAX_FALL = 0.4;
+    private static double LENGTH_MAX_FALL = 0.37;
 
-    private static double WEIGHT_MIN_POTENTIAL_FALL = -3.2;
-    private static double WEIGHT_MAX_POTENTIAL_FALL = -2.0;
+    private static double WEIGHT_MIN_POTENTIAL_FALL = -3.8;
+    private static double WEIGHT_MAX_POTENTIAL_FALL = -1.6;
     private static double LENGTH_MIN_POTENTIAL_FALL = 0.1;
     private static double LENGTH_MAX_POTENTIAL_FALL = 0.4;
 
@@ -57,7 +57,7 @@ public class BedFallAE extends ActivityExtractor {
     private static double LENGTH_MAX_BED_AWAKE_LOW = 0.5;
 
     private static int FALL_IMMUNITY_TIME = 5;
-    private static double POTENTIAL_FALL_THRESHOLD_TIME = 1.0;
+    private static double POTENTIAL_FALL_THRESHOLD_TIME = 0.3;
     private int currentFallImmunityTime;
     private double potentialFallTime;
 
@@ -92,14 +92,13 @@ public class BedFallAE extends ActivityExtractor {
 
 
         if(getCurrentContext() == BED_PRESENT){
-            //nothing changes, or the user withdraws/falls
-            if(userIsWithdrawing(f)){
-                changeContext(BED_AWAY, "User walking away");
-                return true;
-            }
-
-            //check if it has been some time since the user arrived, this prevents accidental fall prediction
+           //check if it has been some time since the user arrived, this prevents accidental fall/withdraw prediction
             if(currentFallImmunityTime <= 0) {
+
+                if(userIsWithdrawing(f)){
+                    changeContext(BED_AWAY, "User walking away");
+                    return true;
+                }
 
                 if (userHasFallen(f)) {
                     changeContext(BED_FALL, "Fall detected.");
@@ -109,7 +108,8 @@ public class BedFallAE extends ActivityExtractor {
                 if(potentialFallDetected(f)){
                     changeContext(BED_POTENTIAL_FALL, "Potential fall detected. Waiting for features.");
                     potentialFallTime = f.getTime();
-                    return true;
+                    //we need at least one feature on the stack -> dont consume this one
+                    return false;
                 }
             }
         }
@@ -146,8 +146,8 @@ public class BedFallAE extends ActivityExtractor {
             case BED_PRESENT:
                 int old = currentFallImmunityTime;
                 currentFallImmunityTime = Math.max(0, currentFallImmunityTime-1);
-                if(old != 0)
-                    Log.e("IMM_TIME", "" + currentFallImmunityTime);
+                if(old == 1)
+                    Log.e("IMM_TIME", "No Immunity!");
                 break;
         }
 

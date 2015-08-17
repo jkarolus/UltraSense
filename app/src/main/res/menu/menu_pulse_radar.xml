@@ -11,4 +11,8 @@
     <item android:id="@+id/action_show_last" android:title="Show Spectrogram"
         android:orderInCategory="100" app:showAsAction="never" />
 
+    <item android:id="@+id/action_calib_fd" android:title="Calibrate FD"
+        android:orderInCategory="100" app:showAsAction="never"
+        android:visible="false"/>
+
 </menu>
