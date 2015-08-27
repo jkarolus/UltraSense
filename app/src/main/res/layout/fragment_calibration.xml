@@ -19,63 +19,65 @@
 
         <!--
         <com.jjoe64.graphview.GraphView
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="fill_parent"
-            android:id="@+id/calib_spectrogram" />
-
-            -->
-        <jakobkarolus.de.ultrasense.view.TouchImageView
             android:id="@+id/calib_spectrogram"
-            android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
             android:layout_weight="1.0"/>
+-->
 
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-            <NumberPicker
-                android:id="@+id/calib_threshold"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <NumberPicker
-                android:id="@+id/calib_halfCarrierWidth"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <NumberPicker
-                android:id="@+id/calib_feature_min"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <NumberPicker
-                android:id="@+id/calib_feature_max"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+<jakobkarolus.de.ultrasense.view.TouchImageView
+    android:id="@+id/calib_spectrogram"
+    android:layout_width="wrap_content"
+    android:layout_height="fill_parent"
+    android:layout_weight="1.0"/>
 
 
-            </LinearLayout>
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
 
-            <Button
-                android:id="@+id/button_update_calib"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Update"
-                android:layout_gravity="center"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
+    <NumberPicker
+        android:id="@+id/calib_threshold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
-        </LinearLayout>
+    <NumberPicker
+        android:id="@+id/calib_halfCarrierWidth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <NumberPicker
+        android:id="@+id/calib_feature_min"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <NumberPicker
+        android:id="@+id/calib_feature_max"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
 
     </LinearLayout>
+
+    <Button
+        android:id="@+id/button_update_calib"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Update"
+        android:layout_gravity="center"/>
+
+
+</LinearLayout>
+
+
+</LinearLayout>
 
 
 </LinearLayout>

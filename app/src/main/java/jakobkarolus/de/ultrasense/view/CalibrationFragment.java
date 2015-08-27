@@ -19,6 +19,9 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+
 import jakobkarolus.de.ultrasense.R;
 import jakobkarolus.de.ultrasense.algorithm.AlgoHelper;
 import jakobkarolus.de.ultrasense.audio.CWSignalGenerator;
@@ -90,6 +93,8 @@ public class CalibrationFragment extends Fragment{
                 currentMagnitudeThreshold = npThreshold.getValue() * -1;
                 currentFeatureMin = npFeatureMin.getValue();
                 currentFeatureMax = npFeatureMax.getValue();
+                //extractValuesSeries();
+                //TODO
                 imageView.setImageBitmap(extractValues());
             }
         });
@@ -121,6 +126,26 @@ public class CalibrationFragment extends Fragment{
         npFeatureMax.setWrapSelectorWheel(false);
 
         return rootView;
+    }
+
+    private void extractValuesSeries() {
+        double[][] data = new double[spectrogram.length][2];
+        for(int i=0; i < spectrogram.length; i++){
+            data[i] =  meanExtraction(spectrogram[i], CARRIER_IDX, currentHalfCarrierWidth);
+        }
+        DataPoint[] dps = new DataPoint[spectrogram.length];
+        DataPoint[] dps2 = new DataPoint[spectrogram.length];
+
+        for(int i=0; i< dps.length; i++){
+            dps[i] = new DataPoint(i, data[i][0]);
+            dps2[i] = new DataPoint(i, data[i][1]*-1);
+        }
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(dps);
+        LineGraphSeries<DataPoint> series2 = new LineGraphSeries<DataPoint>(dps2);
+
+        //TODO
+        //imageView.addSeries(series);
+        //imageView.addSeries(series2);
     }
 
 
@@ -165,7 +190,10 @@ public class CalibrationFragment extends Fragment{
         protected void onPostExecute(Bitmap image) {
             pd.dismiss();
 
+            //TODO
+
             imageView.setImageBitmap(image);
+            //extractValuesSeries();
             calibView.setVisibility(View.VISIBLE);
             startCalib.setVisibility(View.GONE);
 
