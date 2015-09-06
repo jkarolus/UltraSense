@@ -40,5 +40,6 @@
     <string name="app_name_calibration">UltraSenseCalibration</string>
     <string name="calib_message">Blabla info calibration</string>
     <string name="button_record_calibration">Record Calibration Audio</string>
+    <string name="app_name_gallery">UltraSenseGallery</string>
 
 </resources>
