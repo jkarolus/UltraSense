@@ -155,6 +155,7 @@ public class UltraSenseModule {
             gestureFP.registerGestureExtractor(ge);
         }
 
+        //silent S3: -55, 6 (hcw), 4,3
 
         if(noisy)
             featureDetector = new MeanBasedFD(gestureFP, SAMPLE_RATE, fftLength, hopSize, frequency, 3, -50.0, 3, 2, 1, AlgoHelper.getHannWindow(fftLength), true, 15);

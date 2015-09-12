@@ -100,7 +100,7 @@ public class CalibrationFragment extends Fragment{
         });
 
         npThreshold.setMinValue(50);
-        npThreshold.setMaxValue(60);
+        npThreshold.setMaxValue(70);
         npThreshold.setWrapSelectorWheel(false);
         npThreshold.setValue((int) currentMagnitudeThreshold * (-1));
         npThreshold.setFormatter(new NumberPicker.Formatter() {
