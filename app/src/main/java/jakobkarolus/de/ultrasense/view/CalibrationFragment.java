@@ -41,7 +41,7 @@ public class CalibrationFragment extends Fragment{
     private static final int minSize = CALIBRATION_DURATION*SAMPLE_RATE*2;//4*4096;
     private static final double CARRIER_IDX = ((CARRIER_FREQ / ((double) SAMPLE_RATE / 2.0)) * (FFT_LENGTH / 2 + 1)) - 1;
     private static int BITMAP_HEIGHT=201;
-    private static int BITMAP_HEIGHT_FACTOR = 2;
+    private static int BITMAP_HEIGHT_FACTOR = 1;
 
     private Button startCalib;
     private Button updateCalib;
@@ -267,9 +267,22 @@ public class CalibrationFragment extends Fragment{
 
     private Bitmap extractValues() {
         int[][] image = new int[spectrogram.length][BITMAP_HEIGHT];
+        int lastMeanHigh = BITMAP_HEIGHT / 2;
+        int lastMeanLow = BITMAP_HEIGHT / 2;
+
+
         for(int i=0; i < spectrogram.length; i++){
             double[] valuePerTimestep = meanExtraction(spectrogram[i], CARRIER_IDX, currentHalfCarrierWidth);
-            generateImageColumn(valuePerTimestep[0], valuePerTimestep[1], image[i]);
+            int meanHigh = Math.min(BITMAP_HEIGHT / 2 - (int) Math.round(valuePerTimestep[0] * BITMAP_HEIGHT_FACTOR), BITMAP_HEIGHT - 1);
+            int meanLow = Math.max(BITMAP_HEIGHT / 2 + (int) Math.round(valuePerTimestep[1] * BITMAP_HEIGHT_FACTOR), 0);
+            generateImageColumn(meanHigh, meanLow, image[i]);
+            if(i>0) {
+                drawLine(lastMeanHigh, meanHigh, image, i);
+                drawLine(lastMeanLow, meanLow, image, i);
+            }
+            lastMeanHigh = meanHigh;
+            lastMeanLow = meanLow;
+
         }
 
         int[] imageArray = new int[BITMAP_HEIGHT*spectrogram.length];
@@ -291,9 +304,30 @@ public class CalibrationFragment extends Fragment{
         return Bitmap.createBitmap(imageArray, spectrogram.length, BITMAP_HEIGHT, Bitmap.Config.ARGB_8888);
     }
 
-    private void generateImageColumn(double meanHigh, double meanLow, int[] image) {
-        image[Math.min(BITMAP_HEIGHT/2+(int)Math.round(meanHigh*BITMAP_HEIGHT_FACTOR), BITMAP_HEIGHT-1)] = Color.rgb(255, 0, 0);
-        image[Math.max(BITMAP_HEIGHT / 2 - (int) Math.round(meanLow * BITMAP_HEIGHT_FACTOR), 0)] = Color.rgb(255, 0, 0);
+    private void drawLine(int lastMean, int mean, int[][] image, int colNumber) {
+
+        int x0= colNumber-1;
+        int y0 = lastMean;
+        int x1 = colNumber;
+        int y1 = mean;
+
+
+        int dx = Math.abs(x1-x0), sx = x0<x1 ? 1 : -1;
+        int dy = -Math.abs(y1-y0), sy = y0<y1 ? 1 : -1;
+        int err = dx+dy, e2; /* error value e_xy */
+
+        while(true){
+            image[x0][y0] = Color.rgb(255, 0, 0);
+            if (x0==x1 && y0==y1) break;
+            e2 = 2*err;
+            if (e2 > dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+            if (e2 < dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+        }
+    }
+
+    private void generateImageColumn(int meanHigh, int meanLow, int[] image) {
+        image[meanHigh] = Color.rgb(255, 0, 0);
+        image[meanLow] = Color.rgb(255, 0, 0);
         image[BITMAP_HEIGHT/2+currentFeatureMin*BITMAP_HEIGHT_FACTOR] = Color.rgb(0, 255, 0);
         image[BITMAP_HEIGHT/2-currentFeatureMin*BITMAP_HEIGHT_FACTOR] = Color.rgb(0, 255, 0);
         image[BITMAP_HEIGHT/2+currentFeatureMax*BITMAP_HEIGHT_FACTOR] = Color.rgb(0, 0, 255);
