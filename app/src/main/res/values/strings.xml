@@ -38,7 +38,7 @@
     <string name="pref_key_extractors">Extractors to use</string>
     <string name="pref_key_noisy_env">Consider noisy Environment</string>
     <string name="app_name_calibration">UltraSenseCalibration</string>
-    <string name="calib_message">Blabla info calibration</string>
+    <string name="calib_message">Press \"Record Calibration Audio\" and perform typical gestures (swipe, wave). You have 5 seconds to do so. Afterwards the app will provide the spectrogram.</string>
     <string name="button_record_calibration">Record Calibration Audio</string>
     <string name="app_name_gallery">UltraSenseGallery</string>
 
